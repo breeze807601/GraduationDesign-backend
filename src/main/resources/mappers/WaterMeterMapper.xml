@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.backend.mapper.WaterMeterMapper">
+
+    <select id="selectExcel" resultType="com.example.backend.pojo.excelVo.MeterExcel">
+        SELECT u.name, b.id, b.building_num, b.floor, b.doorplate, wm.reading AS previousReading
+        FROM (
+                 SELECT wm.id, wm.user_id, wm.building_id, wm.reading, wm.time,
+                        ROW_NUMBER() OVER (PARTITION BY wm.user_id ORDER BY wm.time DESC) AS rn
+                 FROM water_meter wm
+                 WHERE wm.time BETWEEN #{lastMonth} AND #{now}
+             ) wm
+                 JOIN user u ON u.id = wm.user_id
+                 JOIN building b ON wm.building_id = b.id
+        WHERE wm.rn = 1
+        ORDER BY u.building_id
+    </select>
+</mapper>

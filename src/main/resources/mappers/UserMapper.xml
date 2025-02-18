@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.backend.mapper.UserMapper">
+
+    <resultMap id="UserVoResultMap" type="com.example.backend.pojo.excelVo.UserExcel">
+        <id property="id" column="id"/>
+        <result property="phone" column="phone"/>
+        <result property="name" column="name"/>
+        <result property="sex" column="sex"/>
+        <result property="time" column="time"/>
+        <result property="buildingId" column="building_id"/>
+        <result property="buildingNum" column="building_num"/>
+        <result property="floor" column="floor"/>
+        <result property="doorplate" column="doorplate"/>
+    </resultMap>
+
+    <update id="refund">
+        update user
+        set balance = balance + #{refund}
+        where id = #{id}
+    </update>
+    <update id="updateBatch">
+        <foreach collection="list" item="user" separator=";">
+            update user
+            set balance = #{user.balance}
+            where id = #{user.id}
+        </foreach>
+    </update>
+
+    <select id="selectAll" resultMap="UserVoResultMap">
+        select u.id,u.phone,u.name,u.sex,u.time,u.building_id,b.building_num,b.floor,b.doorplate
+        from user u,building b
+        where u.building_id=b.id
+        order by b.id
+    </select>
+    <select id="getIdMap" resultType="java.util.Map">
+        SELECT building_id, id FROM user
+    </select>
+    <select id="getIds" resultType="java.lang.Long">
+        select id from user
+        <where>
+            <if test="name != null">
+                name like concat('%',#{name},'%')
+            </if>
+        </where>
+    </select>
+    <select id="getUserMap" resultType="java.util.Map">
+        select id,balance
+        <if test="flag">
+            ,phone,name
+        </if>
+        from user
+    </select>
+</mapper>

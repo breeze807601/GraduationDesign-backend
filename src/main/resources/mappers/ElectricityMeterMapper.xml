@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.backend.mapper.ElectricityMeterMapper">
+
+    <select id="selectExcel" resultType="com.example.backend.pojo.excelVo.MeterExcel">
+        SELECT u.name, b.id, b.building_num, b.floor, b.doorplate, em.reading AS previousReading
+        FROM (
+                 SELECT em.id, em.user_id, em.building_id, em.reading, em.time,
+                        ROW_NUMBER() OVER (PARTITION BY em.user_id ORDER BY em.time DESC) AS rn
+                 FROM electricity_meter em
+                 WHERE em.time BETWEEN #{lastMonth} AND #{now}
+             ) em
+                 JOIN user u ON u.id = em.user_id
+                 JOIN building b ON em.building_id = b.id
+        WHERE em.rn = 1
+        ORDER BY u.building_id
+    </select>
+</mapper>
