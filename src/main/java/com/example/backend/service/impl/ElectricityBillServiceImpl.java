@@ -133,8 +133,6 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
         List<ElectricityBill> list = super.list(new LambdaQueryWrapper<ElectricityBill>()
                 .eq(ElectricityBill::getStatus, StatusEnum.PAID_IN.getCode()));
         Map<Long, Map<String, Object>> userMap = userMapper.getUserMap(true);
-        List<String> phones = new ArrayList<>();
-        List<BillSMSVo> billSMSVos = new ArrayList<>();
         for (ElectricityBill bill : list) {
             String phone = userMap.get(bill.getUserId()).get("phone").toString();
             BillSMSVo billSMSVo = new BillSMSVo()
@@ -152,12 +150,6 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
         Client client = SMSUtil.createClient();
         SendSmsRequest request = new SendSmsRequest();
         RuntimeOptions runtime = new RuntimeOptions();
-        Map<String, Object> map = new HashMap<>();
-//        map.put("name", billSMSVo.getName());
-//        map.put("time", billSMSVo.getTime());
-//        map.put("price", billSMSVo.getPrice());
-//        map.put("summation", billSMSVo.getSummation());
-//        map.put("cost", billSMSVo.getCost());
         request.setSignName("小区系统提醒")
                 .setTemplateCode("SMS_478965172")
                 .setPhoneNumbers(phone)

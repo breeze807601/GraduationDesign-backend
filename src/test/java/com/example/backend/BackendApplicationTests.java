@@ -105,12 +105,7 @@ class BackendApplicationTests {
 //                .setCost(BigDecimal.valueOf(100));
 //        System.out.println(vo.toString());
         try {
-            electricityBillService.sendSms("13005632378", new BillSMSVo()
-                    .setName("张相儒")
-                    .setTime(LocalDate.now().toString())
-                    .setPrice(BigDecimal.valueOf(100))
-                    .setSummation(BigDecimal.valueOf(100))
-                    .setCost(BigDecimal.valueOf(100)));
+            electricityBillService.SMSNotification();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
