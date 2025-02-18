@@ -11,6 +11,7 @@ public class SMSUtil {
         config.setAccessKeyId(ACCESS_KEY_ID)
                 .setAccessKeySecret(ACCESS_KEY_SECRET);
         config.endpoint = "dysmsapi.aliyuncs.com";
+
         return new Client(config);
     }
 }
