@@ -31,9 +31,8 @@ public class Task {
     }
     @Scheduled(cron = "0 0 3 1 * ?")  //每月一号凌晨3点执行一次
     public void SMSNotification() {
-        // 发起短信通知，通知已支付的住户
         try {
-            // 发送电费通知
+            // 发送电费通知已缴费用户
             electricityBillService.SMSNotification();
         } catch (Exception e) {
             throw new RuntimeException(e);
