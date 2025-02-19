@@ -42,6 +42,7 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
     private final BuildingMapper buildingMapper;
     private final UserMapper userMapper;
     @Override
+    @Transactional
     public void mySave(LocalDate now) {
         Tariff tariff = tariffMapper.selectOne(new LambdaQueryWrapper<Tariff>().eq(Tariff::getName, 0));
         LambdaQueryWrapper<WaterMeter> wrapper = new LambdaQueryWrapper<>();
