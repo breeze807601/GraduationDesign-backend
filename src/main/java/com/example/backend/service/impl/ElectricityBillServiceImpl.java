@@ -10,6 +10,7 @@ import com.aliyun.teautil.Common;
 import com.aliyun.teautil.models.RuntimeOptions;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.backend.common.enums.SMSCodeEnum;
 import com.example.backend.common.enums.StatusEnum;
 import com.example.backend.mapper.*;
 import com.example.backend.pojo.dto.PageDTO;
@@ -20,6 +21,7 @@ import com.example.backend.pojo.vo.BillVo;
 import com.example.backend.service.IElectricityBillService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.backend.utils.SMSUtil;
+import com.example.backend.utils.SendSMSUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -127,9 +129,9 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
             e.printStackTrace();
         }
     }
-
     @Override
-    public void SMSNotification() throws Exception {
+    @Transactional
+    public void paidSMSNotification() throws Exception {
         List<ElectricityBill> list = super.list(new LambdaQueryWrapper<ElectricityBill>()
                 .eq(ElectricityBill::getStatus, StatusEnum.PAID_IN.getCode()));
         Map<Long, Map<String, Object>> userMap = userMapper.getUserMap(true);
@@ -141,38 +143,12 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
                     .setPrice(bill.getPrice())
                     .setSummation(bill.getSummation())
                     .setCost(bill.getCost());
-            sendSms(phone, billSMSVo);
+            SendSMSUtil.paidReminder(phone, billSMSVo,SMSCodeEnum.REMINDER_OF_PAID_ELECTRICITY.getCode());
         }
     }
     @Override
-    public void sendSms(String phone, BillSMSVo billSMSVo) throws Exception {
-        // 创建短信客户端
-        Client client = SMSUtil.createClient();
-        SendSmsRequest request = new SendSmsRequest();
-        RuntimeOptions runtime = new RuntimeOptions();
-        request.setSignName("小区系统提醒")
-                .setTemplateCode("SMS_478965172")
-                .setPhoneNumbers(phone)
-                .setTemplateParam(billSMSVo.toString());
-        try {
-            // 复制代码运行请自行打印 API 的返回值
-            client.sendSmsWithOptions(request, runtime);
-        } catch (TeaException error) {
-            // 此处仅做打印展示，请谨慎对待异常处理，在工程项目中切勿直接忽略异常。
-            // 错误 message
-            System.out.println(error.getMessage());
-            // 诊断地址
-            System.out.println(error.getData().get("Recommend"));
-            Common.assertAsString(error.message);
-        } catch (Exception e) {
-            TeaException error = new TeaException(e.getMessage(), e);
-            // 此处仅做打印展示，请谨慎对待异常处理，在工程项目中切勿直接忽略异常。
-            // 错误 message
-            System.out.println(error.getMessage());
-            // 诊断地址
-            System.out.println(error.getData().get("Recommend"));
-            Common.assertAsString(error.message);
-        }
+    public List<User> getUserPhoneWithName(Integer status) {     // 查询待支付名单
+        return super.getBaseMapper().getUserPhoneWithName(status);
     }
     @Transactional
     public BillVo getBillVo(ElectricityBill e) {

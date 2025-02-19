@@ -2,4 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.backend.mapper.WaterBillMapper">
 
+    <select id="getUserPhoneWithName" resultType="com.example.backend.pojo.entity.User">
+        select phone,name
+        from water_bill
+            join user on water_bill.user_id = user.id
+        where status = #{code}
+    </select>
 </mapper>

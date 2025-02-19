@@ -2,6 +2,9 @@ package com.example.backend.mapper;
 
 import com.example.backend.pojo.entity.ElectricityBill;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.example.backend.pojo.entity.User;
+
+import java.util.List;
 
 /**
  * <p>
@@ -13,4 +16,5 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 public interface ElectricityBillMapper extends BaseMapper<ElectricityBill> {
 
+    List<User> getUserPhoneWithName(Integer code);
 }

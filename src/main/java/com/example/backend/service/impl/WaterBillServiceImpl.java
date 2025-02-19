@@ -3,14 +3,17 @@ package com.example.backend.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.backend.common.enums.SMSCodeEnum;
 import com.example.backend.common.enums.StatusEnum;
 import com.example.backend.mapper.*;
 import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.entity.*;
 import com.example.backend.pojo.query.BillQuery;
+import com.example.backend.pojo.vo.BillSMSVo;
 import com.example.backend.pojo.vo.BillVo;
 import com.example.backend.service.IWaterBillService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.backend.utils.SendSMSUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,6 +83,7 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         return new PageDTO<>(page.getTotal(), page.getPages(), vos);
     }
     @Override
+    @Transactional
     public void automaticPayment() {
         try {
             // 待支付的账单
@@ -97,7 +101,7 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
                     billList.add(bill);
                     continue;
                 }
-                if (bill.getCost().compareTo(new BigDecimal("200")) < 0) {
+                if (bill.getCost().compareTo(new BigDecimal("70")) < 0) {
                     // 账单金额小于200元，则为小额，自动扣款，并将要修改的值封装到list中
                     userList.add(new User()
                             .setId(userId).setBalance(balance.subtract(bill.getCost())));
@@ -112,6 +116,29 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         } catch (RuntimeException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    @Transactional
+    public void paidSMSNotification() throws Exception {
+        List<WaterBill> list = super.list(new LambdaQueryWrapper<WaterBill>()
+                .eq(WaterBill::getStatus, StatusEnum.PAID_IN.getCode()));
+        Map<Long, Map<String, Object>> userMap = userMapper.getUserMap(true);
+        for (WaterBill bill : list) {
+            String phone = userMap.get(bill.getUserId()).get("phone").toString();
+            BillSMSVo billSMSVo = new BillSMSVo()
+                    .setName(userMap.get(bill.getUserId()).get("name").toString())
+                    .setTime(bill.getTime().toString())
+                    .setPrice(bill.getPrice())
+                    .setSummation(bill.getSummation())
+                    .setCost(bill.getCost());
+            SendSMSUtil.paidReminder(phone, billSMSVo, SMSCodeEnum.REMINDER_OF_PAID_ELECTRICITY.getCode());
+        }
+    }
+
+    @Override
+    public List<User> getUserPhoneWithName(Integer code) {  // 根据code获取不同状态的住户列表
+        return super.getBaseMapper().getUserPhoneWithName(code);
     }
     @Transactional
     public BillVo getBillVo(WaterBill w) {

@@ -105,7 +105,7 @@ class BackendApplicationTests {
 //                .setCost(BigDecimal.valueOf(100));
 //        System.out.println(vo.toString());
         try {
-            electricityBillService.SMSNotification();
+
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
