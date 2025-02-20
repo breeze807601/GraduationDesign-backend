@@ -18,5 +18,6 @@
             join building b on b.id = eb.building_id
             join electricity_meter em on eb.electricity_meter_id = em.id
         where eb.time BETWEEN #{startOfMonth} AND #{endOfMonth}
+        order by b.id
     </select>
 </mapper>
