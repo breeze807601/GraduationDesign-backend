@@ -156,8 +156,8 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
         }
     }
     @Override
-    public List<User> getUserPhoneWithName(Integer status) {     // 查询名单
-        return super.getBaseMapper().getUserPhoneWithName(status);
+    public List<User> getUserPhoneWithName(Integer code) {
+        return super.getBaseMapper().getUserPhoneWithName(code);
     }
     @Override
     public void export(HttpServletResponse response) throws Exception  {
