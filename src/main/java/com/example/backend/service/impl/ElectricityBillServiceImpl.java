@@ -2,6 +2,8 @@ package com.example.backend.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
+import cn.hutool.poi.excel.BigExcelWriter;
+import cn.hutool.poi.excel.ExcelUtil;
 import com.aliyun.dysmsapi20170525.Client;
 import com.aliyun.dysmsapi20170525.models.SendBatchSmsRequest;
 import com.aliyun.dysmsapi20170525.models.SendSmsRequest;
@@ -10,11 +12,13 @@ import com.aliyun.teautil.Common;
 import com.aliyun.teautil.models.RuntimeOptions;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.backend.common.Result;
 import com.example.backend.common.enums.SMSCodeEnum;
 import com.example.backend.common.enums.StatusEnum;
 import com.example.backend.mapper.*;
 import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.entity.*;
+import com.example.backend.pojo.excelVo.BillExcel;
 import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillSMSVo;
 import com.example.backend.pojo.vo.BillVo;
@@ -22,13 +26,18 @@ import com.example.backend.service.IElectricityBillService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.backend.utils.SMSUtil;
 import com.example.backend.utils.SendSMSUtil;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -147,8 +156,69 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
         }
     }
     @Override
-    public List<User> getUserPhoneWithName(Integer status) {     // 查询待支付名单
+    public List<User> getUserPhoneWithName(Integer status) {     // 查询名单
         return super.getBaseMapper().getUserPhoneWithName(status);
+    }
+    @Override
+    public void export(HttpServletResponse response) throws Exception  {
+        LocalDate date = LocalDate.now();
+        LocalDate startOfMonth = date.with(TemporalAdjusters.firstDayOfMonth());
+        LocalDate endOfMonth = date.with(TemporalAdjusters.lastDayOfMonth());
+
+        List<BillExcel> list = super.getBaseMapper().selectExcel(startOfMonth,endOfMonth);
+        BigExcelWriter writer = ExcelUtil.getBigWriter();
+        // 导出设置了别名的字段
+        writer.addHeaderAlias("buildingNum", "楼号");
+        writer.addHeaderAlias("floor", "楼层");
+        writer.addHeaderAlias("doorplate", "门牌");
+        writer.addHeaderAlias("timeExcel", "账单时间");
+        writer.addHeaderAlias("name", "住户姓名");
+        writer.addHeaderAlias("previousReading", "上次读数(度)");
+        writer.addHeaderAlias("reading", "本次读数(度)");
+        writer.addHeaderAlias("summation", "总用电量(度)");
+        writer.addHeaderAlias("price", "当前价格(度/元)");
+        writer.addHeaderAlias("cost", "总费用(元)");
+        writer.addHeaderAlias("statusExcel", "状态");
+        writer.setOnlyAlias(true);
+        writer.write(list, true);
+
+        Sheet sheet = writer.getSheet();
+        for (int i = 3; i < 11; i++) {
+            sheet.setColumnWidth(i, 15 * 256);
+        }
+
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");
+        String fileName = URLEncoder.encode("本月账单", "UTF-8");
+        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
+
+        ServletOutputStream out = response.getOutputStream();
+        writer.flush(out, true);
+        out.close();
+        writer.close();
+    }
+    @Override
+    public Result<String> noticeOfInsufficientBalance() throws Exception {
+        List<User> list = getUserPhoneWithName(StatusEnum.INSUFFICIENT_BALANCE.getCode());
+        if (list.isEmpty()) {   // 余额不足名单为空
+            return Result.success("暂无住户是余额不足状态");
+        } else {
+            for (User user : list) {
+                SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), SMSCodeEnum.INSUFFICIENT_BALANCE.getCode());
+            }
+            return Result.success("短信发送成功");
+        }
+    }
+    @Override
+    public Result<String> notifyPayment() throws Exception {
+        List<User> list = getUserPhoneWithName(StatusEnum.PAYMENT_IN_PROGRESS.getCode());
+        if (list.isEmpty()) {   // 待支付名单为空
+            return Result.success("暂无住户是待支付状态");
+        } else {
+            for (User user : list) {
+                SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), SMSCodeEnum.PAYMENT_NOTICE.getCode());
+            }
+            return Result.success("短信发送成功");
+        }
     }
     @Transactional
     public BillVo getBillVo(ElectricityBill e) {

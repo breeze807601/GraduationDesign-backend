@@ -8,4 +8,15 @@
             join user on electricity_bill.user_id = user.id
         where status = #{code}
     </select>
+    <select id="selectExcel" resultType="com.example.backend.pojo.excelVo.BillExcel">
+        select name,
+               eb.time,eb.price,eb.summation,eb.cost,eb.status,
+               em.previous_reading,em.reading,
+               b.building_num,b.floor,b.doorplate
+        from electricity_bill eb
+            join user on eb.user_id = user.id
+            join building b on b.id = eb.building_id
+            join electricity_meter em on eb.electricity_meter_id = em.id
+        where eb.time BETWEEN #{startOfMonth} AND #{endOfMonth}
+    </select>
 </mapper>

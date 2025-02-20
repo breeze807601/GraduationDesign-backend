@@ -37,7 +37,7 @@ public class Task {
     @Scheduled(cron = "0 0 2 1 * ?")  //每月一号凌晨2点执行一次
     public void automaticDeductionOfWaterBills() {
         try {
-            // 自动在用户余额中扣除水费，仅限金额小于200元的账单
+            // 自动在用户余额中扣除水费，仅限金额小于70元的账单
             waterBillService.automaticPayment();
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -59,6 +59,7 @@ public class Task {
             // 缴费通知，即大额，且余额充足的住户
             List<User> list1 = electricityBillService.getUserPhoneWithName(StatusEnum.PAYMENT_IN_PROGRESS.getCode());
             list1.addAll(waterBillService.getUserPhoneWithName(StatusEnum.PAYMENT_IN_PROGRESS.getCode()));
+            // 去重,减少短信次数
             Set<User> set = new HashSet<>(list1);
             List<User> paymentnoticeList = new ArrayList<>(set);
             for (User user : paymentnoticeList) {
@@ -74,6 +75,7 @@ public class Task {
             // 通知余额不足用户
             List<User> list1 = electricityBillService.getUserPhoneWithName(StatusEnum.INSUFFICIENT_BALANCE.getCode());
             list1.addAll(waterBillService.getUserPhoneWithName(StatusEnum.INSUFFICIENT_BALANCE.getCode()));
+            // 去重,减少短信次数
             Set<User> set = new HashSet<>(list1);
             List<User> paymentnoticeList = new ArrayList<>(set);
             for (User user : paymentnoticeList) {

@@ -8,6 +8,7 @@ import com.example.backend.pojo.vo.BillVo;
 import com.example.backend.service.IElectricityBillService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,5 +40,23 @@ public class ElectricityBillController {
     @GetMapping("list")
     public Result<PageDTO<BillVo>> list(BillQuery billQuery) {
         return Result.success(electricityBillService.getPage(billQuery));
+    }
+    @Operation(summary = "导出本月账单")
+    @SaCheckRole("admin")
+    @GetMapping("export")
+    public void export(HttpServletResponse response) throws Exception {
+        electricityBillService.export(response);
+    }
+    @Operation(summary = "通知余额不足住户")
+    @SaCheckRole("admin")
+    @PostMapping("noticeOfInsufficientBalance")
+    public Result<String> noticeOfInsufficientBalance() throws Exception {
+        return electricityBillService.noticeOfInsufficientBalance();
+    }
+    @Operation(summary = "通知住户缴费")
+    @SaCheckRole("admin")
+    @PostMapping("notifyPayment")
+    public Result<String> notifyPayment() throws Exception {
+        return electricityBillService.notifyPayment();
     }
 }

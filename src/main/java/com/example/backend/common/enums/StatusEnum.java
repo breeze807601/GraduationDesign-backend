@@ -22,13 +22,4 @@ public enum StatusEnum {
         this.code = code;
         this.status = status;
     }
-    @JsonCreator
-    public static StatusEnum fromCode(Integer code) {
-        for (StatusEnum status : StatusEnum.values()) {
-            if (status.getCode().equals(code)) {
-                return status;
-            }
-        }
-        throw new RuntimeException("Invalid code: " + code);
-    }
 }

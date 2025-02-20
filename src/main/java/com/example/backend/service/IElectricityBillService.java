@@ -1,5 +1,6 @@
 package com.example.backend.service;
 
+import com.example.backend.common.Result;
 import com.example.backend.pojo.entity.ElectricityBill;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.backend.pojo.dto.PageDTO;
@@ -7,6 +8,7 @@ import com.example.backend.pojo.entity.User;
 import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillSMSVo;
 import com.example.backend.pojo.vo.BillVo;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,4 +27,7 @@ public interface IElectricityBillService extends IService<ElectricityBill> {
     void automaticPayment();
     void paidSMSNotification() throws Exception;
     List<User> getUserPhoneWithName(Integer status);
+    void export(HttpServletResponse response) throws Exception;
+    Result<String> noticeOfInsufficientBalance() throws Exception;
+    Result<String> notifyPayment() throws Exception;
 }
