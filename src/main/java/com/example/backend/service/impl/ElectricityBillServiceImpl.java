@@ -37,11 +37,10 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -220,6 +219,41 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
             return Result.success("短信发送成功");
         }
     }
+    @Override
+    public Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end) {
+        LambdaQueryWrapper<ElectricityBill> queryWrapper = new LambdaQueryWrapper<>();
+        // 构建查询条件,若传参为空，则是默认近期半年
+        if (start == null) {
+            queryWrapper.ge(ElectricityBill::getTime, LocalDate.now().minusMonths(6))
+                    .le(ElectricityBill::getTime, LocalDate.now());
+        } else {
+            queryWrapper.ge(ElectricityBill::getTime, start)
+                    .le(ElectricityBill::getTime, end.with(TemporalAdjusters.lastDayOfMonth()));
+        }
+        List<ElectricityBill> records = super.list(queryWrapper);
+        // 按月份分组并计算每月总电量
+        Map<String, BigDecimal> monthlyUsage = records.stream()
+                .collect(Collectors.groupingBy(
+                        record -> record.getTime().format(DateTimeFormatter.ofPattern("yyyy-MM")),
+                        Collectors.reducing(
+                                BigDecimal.ZERO,
+                                ElectricityBill::getSummation,
+                                BigDecimal::add)
+                ));
+        // 提取月份并排序
+        List<String> dateList = new ArrayList<>(monthlyUsage.keySet());
+        Collections.sort(dateList);
+        // 生成对应的 BigDecimal 数组
+        List<BigDecimal> usageList = dateList.stream()
+                .map(monthlyUsage::get)
+                .collect(Collectors.toList());
+        // 将结果封装到 Map 中
+        Map<String, Object> map = new HashMap<>();
+        map.put("date", dateList);   // 日期列表
+        map.put("usage", usageList); // 对应的用电量列表
+        return map;
+    }
+
     @Transactional
     public BillVo getBillVo(ElectricityBill e) {
         BillVo billVo = BeanUtil.copyProperties(e, BillVo.class);

@@ -10,10 +10,9 @@ import com.example.backend.pojo.vo.BillSMSVo;
 public class SendSMSUtil {
     /**
      *
-     * @param phone
+     * @param phone 电话
      * @param billSMSVo 短信中的信息
      * @param code  短信模板码，REMINDER_OF_PAID_ELECTRICITY：电费账单提醒，REMINDER_OF_PAID_WATER：水费账单提醒
-     * @throws Exception
      */
     public static void paidReminder(String phone, BillSMSVo billSMSVo,String code) throws Exception {
         Client client = SMSUtil.createClient();
@@ -36,7 +35,6 @@ public class SendSMSUtil {
      * @param phone 电话
      * @param name  名字
      * @param code  短信模板码，INSUFFICIENT_BALANCE：余额不足，PAYMENT_NOTICE：待支付住户缴费通知
-     * @throws Exception
      */
     public static void sendPaymentNotice(String phone,String name,String code) throws Exception {
         Client client = SMSUtil.createClient();

@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -30,4 +31,5 @@ public interface IElectricityBillService extends IService<ElectricityBill> {
     void export(HttpServletResponse response) throws Exception;
     Result<String> noticeOfInsufficientBalance() throws Exception;
     Result<String> notifyPayment() throws Exception;
+    Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end);
 }

@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 /**
  * <p>
@@ -58,5 +59,11 @@ public class WaterBillController {
     @PostMapping("notifyPayment")
     public Result<String> notifyPayment() throws Exception {
         return waterBillService.notifyPayment();
+    }
+    @Operation(summary = "统计时间段内每月用电量")
+    @SaCheckRole("admin")
+    @GetMapping("getMonthlyUsage")
+    public Result<Map<String, Object>> getMonthlyUsage(LocalDate start, LocalDate end) {
+        return Result.success(waterBillService.getMonthlyUsage(start, end));
     }
 }

@@ -13,10 +13,7 @@ import com.example.backend.mapper.UserMapper;
 import com.example.backend.mapper.WaterBillMapper;
 import com.example.backend.mapper.WaterMeterMapper;
 import com.example.backend.pojo.dto.PageDTO;
-import com.example.backend.pojo.entity.Building;
-import com.example.backend.pojo.entity.User;
-import com.example.backend.pojo.entity.WaterBill;
-import com.example.backend.pojo.entity.WaterMeter;
+import com.example.backend.pojo.entity.*;
 import com.example.backend.pojo.excelVo.MeterExcel;
 import com.example.backend.pojo.query.MeterQuery;
 import com.example.backend.pojo.vo.MeterVo;
@@ -35,10 +32,10 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -74,7 +71,7 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
     public void export(HttpServletResponse response) throws Exception {
         LocalDate now = LocalDate.now();
         LocalDate lastMonth = now.minusMonths(1).with(TemporalAdjusters.lastDayOfMonth());
-        List<MeterExcel> list = super.getBaseMapper().selectExcel(now, lastMonth);  // 查询出电表记录
+        List<MeterExcel> list = super.getBaseMapper().selectExcel(now, lastMonth);
         BigExcelWriter writer = ExcelUtil.getBigWriter();
         // 导出设置了别名的字段
         writer.addHeaderAlias("excelId", "编号");
