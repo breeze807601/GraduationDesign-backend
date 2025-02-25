@@ -22,6 +22,7 @@ import com.example.backend.pojo.excelVo.BillExcel;
 import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillSMSVo;
 import com.example.backend.pojo.vo.BillVo;
+import com.example.backend.pojo.vo.DataItem;
 import com.example.backend.service.IElectricityBillService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.backend.utils.SMSUtil;
@@ -221,36 +222,22 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
     }
     @Override
     public Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end) {
-        LambdaQueryWrapper<ElectricityBill> queryWrapper = new LambdaQueryWrapper<>();
-        // 构建查询条件,若传参为空，则是默认近期半年
-        if (start == null) {
-            queryWrapper.ge(ElectricityBill::getTime, LocalDate.now().minusMonths(6))
-                    .le(ElectricityBill::getTime, LocalDate.now());
-        } else {
-            queryWrapper.ge(ElectricityBill::getTime, start)
-                    .le(ElectricityBill::getTime, end.with(TemporalAdjusters.lastDayOfMonth()));
+        if (start == null && end == null) {  // 默认为半年内
+            start = LocalDate.now().minusMonths(6).with(TemporalAdjusters.firstDayOfMonth());
+            end = LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());
+        } else {  // 设置为当月最后一天
+            end = end.with(TemporalAdjusters.lastDayOfMonth());
         }
-        List<ElectricityBill> records = super.list(queryWrapper);
-        // 按月份分组并计算每月总电量
-        Map<String, BigDecimal> monthlyUsage = records.stream()
-                .collect(Collectors.groupingBy(
-                        record -> record.getTime().format(DateTimeFormatter.ofPattern("yyyy-MM")),
-                        Collectors.reducing(
-                                BigDecimal.ZERO,
-                                ElectricityBill::getSummation,
-                                BigDecimal::add)
-                ));
-        // 提取月份并排序
-        List<String> dateList = new ArrayList<>(monthlyUsage.keySet());
-        Collections.sort(dateList);
-        // 生成对应的 BigDecimal 数组
-        List<BigDecimal> usageList = dateList.stream()
-                .map(monthlyUsage::get)
-                .collect(Collectors.toList());
-        // 将结果封装到 Map 中
+        List<DataItem> records = super.getBaseMapper().getMonthlySummation(start,end);
+        List<String> dates = new ArrayList<>(records.size());
+        List<BigDecimal> usages = new ArrayList<>(records.size());
+        for (DataItem item : records) {
+            dates.add(item.getTime());
+            usages.add(item.getNum());
+        }
         Map<String, Object> map = new HashMap<>();
-        map.put("date", dateList);   // 日期列表
-        map.put("usage", usageList); // 对应的用电量列表
+        map.put("date", dates);
+        map.put("usage", usages);
         return map;
     }
 

@@ -20,4 +20,11 @@
         where eb.time BETWEEN #{startOfMonth} AND #{endOfMonth}
         order by b.id
     </select>
+    <select id="getMonthlySummation" resultType="com.example.backend.pojo.vo.DataItem">
+        SELECT DATE_FORMAT(time, '%Y-%m') AS time, SUM(summation) AS num
+        FROM electricity_bill
+        WHERE time BETWEEN #{start} AND #{end}
+        GROUP BY DATE_FORMAT(time, '%Y-%m')
+        ORDER BY time
+    </select>
 </mapper>

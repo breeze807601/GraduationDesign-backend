@@ -4,6 +4,7 @@ import com.example.backend.pojo.entity.ElectricityBill;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.backend.pojo.entity.User;
 import com.example.backend.pojo.excelVo.BillExcel;
+import com.example.backend.pojo.vo.DataItem;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,4 +21,5 @@ public interface ElectricityBillMapper extends BaseMapper<ElectricityBill> {
 
     List<User> getUserPhoneWithName(Integer code);
     List<BillExcel> selectExcel(LocalDate startOfMonth, LocalDate endOfMonth);
+    List<DataItem> getMonthlySummation(LocalDate start, LocalDate end);
 }
