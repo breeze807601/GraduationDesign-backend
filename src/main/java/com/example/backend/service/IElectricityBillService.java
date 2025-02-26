@@ -32,4 +32,5 @@ public interface IElectricityBillService extends IService<ElectricityBill> {
     Result<String> noticeOfInsufficientBalance() throws Exception;
     Result<String> notifyPayment() throws Exception;
     Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end);
+    Map<String, Object> getCostStatistics(LocalDate start, LocalDate end);
 }

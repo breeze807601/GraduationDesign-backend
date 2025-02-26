@@ -27,6 +27,7 @@ import com.example.backend.service.IElectricityBillService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.backend.utils.SMSUtil;
 import com.example.backend.utils.SendSMSUtil;
+import com.example.backend.utils.StatisticsUtil;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -228,22 +229,18 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
         } else {  // 设置为当月最后一天
             end = end.with(TemporalAdjusters.lastDayOfMonth());
         }
-        List<DataItem> records = super.getBaseMapper().getMonthlySummation(start,end);
-        List<String> dates = new ArrayList<>(records.size());
-        List<BigDecimal> usages = new ArrayList<>(records.size());
-        List<BigDecimal> avgUsages = new ArrayList<>(records.size());
-        for (DataItem item : records) {
-            dates.add(item.getTime());
-            usages.add(item.getNum());
-            avgUsages.add(item.getAvgNum());
-        }
-        Map<String, Object> map = new HashMap<>();
-        map.put("date", dates);
-        map.put("usage", usages);
-        map.put("avgUsage", avgUsages);
-        return map;
+        return StatisticsUtil.getMap(super.getBaseMapper().getMonthlySummation(start,end));
     }
-
+    @Override
+    public Map<String, Object> getCostStatistics(LocalDate start, LocalDate end) {
+        if (start == null && end == null) {  // 默认为半年内
+            start = LocalDate.now().minusMonths(6).with(TemporalAdjusters.firstDayOfMonth());
+            end = LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());
+        } else {  // 设置为当月最后一天
+            end = end.with(TemporalAdjusters.lastDayOfMonth());
+        }
+        return StatisticsUtil.getMap(super.getBaseMapper().getCostStatistics(start,end));
+    }
     @Transactional
     public BillVo getBillVo(ElectricityBill e) {
         BillVo billVo = BeanUtil.copyProperties(e, BillVo.class);

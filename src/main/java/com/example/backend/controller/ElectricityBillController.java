@@ -66,4 +66,10 @@ public class ElectricityBillController {
     public Result<Map<String, Object>> getMonthlyUsage(LocalDate start, LocalDate end) {
         return Result.success(electricityBillService.getMonthlyUsage(start, end));
     }
+    @Operation(summary = "每月用电费用统计和平均值")
+    @SaCheckRole("admin")
+    @GetMapping("getCostStatistics")
+    public Result<Map<String, Object>> getCostStatistics(LocalDate start, LocalDate end) {
+        return Result.success(electricityBillService.getCostStatistics(start,end));
+    }
 }

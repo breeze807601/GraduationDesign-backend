@@ -22,4 +22,5 @@ public interface ElectricityBillMapper extends BaseMapper<ElectricityBill> {
     List<User> getUserPhoneWithName(Integer code);
     List<BillExcel> selectExcel(LocalDate startOfMonth, LocalDate endOfMonth);
     List<DataItem> getMonthlySummation(LocalDate start, LocalDate end);
+    List<DataItem> getCostStatistics(LocalDate start, LocalDate end);
 }

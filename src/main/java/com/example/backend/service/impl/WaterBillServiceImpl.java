@@ -19,6 +19,7 @@ import com.example.backend.pojo.vo.DataItem;
 import com.example.backend.service.IWaterBillService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.backend.utils.SendSMSUtil;
+import com.example.backend.utils.StatisticsUtil;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -129,7 +130,6 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
             e.printStackTrace();
         }
     }
-
     @Override
     @Transactional
     public void paidSMSNotification() throws Exception {
@@ -147,12 +147,10 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
             SendSMSUtil.paidReminder(phone, billSMSVo, SMSCodeEnum.REMINDER_OF_PAID_ELECTRICITY.getCode());
         }
     }
-
     @Override
     public List<User> getUserPhoneWithName(Integer code) {  // 根据code获取不同状态的住户列表
         return super.getBaseMapper().getUserPhoneWithName(code);
     }
-
     @Override
     public void export(HttpServletResponse response) throws Exception {
         LocalDate date = LocalDate.now();
@@ -222,20 +220,17 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         } else {  // 设置为当月最后一天
             end = end.with(TemporalAdjusters.lastDayOfMonth());
         }
-        List<DataItem> records = super.getBaseMapper().getMonthlySummation(start,end);
-        List<String> dates = new ArrayList<>(records.size());
-        List<BigDecimal> usages = new ArrayList<>(records.size());
-        List<BigDecimal> avgUsages = new ArrayList<>(records.size());
-        for (DataItem item : records) {
-            dates.add(item.getTime());
-            usages.add(item.getNum());
-            avgUsages.add(item.getAvgNum());
+        return StatisticsUtil.getMap(super.getBaseMapper().getMonthlySummation(start,end));
+    }
+    @Override
+    public Map<String, Object> getCostStatistics(LocalDate start, LocalDate end) {
+        if (start == null && end == null) {  // 默认为半年内
+            start = LocalDate.now().minusMonths(6).with(TemporalAdjusters.firstDayOfMonth());
+            end = LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());
+        } else {  // 设置为当月最后一天
+            end = end.with(TemporalAdjusters.lastDayOfMonth());
         }
-        Map<String, Object> map = new HashMap<>();
-        map.put("date", dates);
-        map.put("usage", usages);
-        map.put("avgUsage", avgUsages);
-        return map;
+        return StatisticsUtil.getMap(super.getBaseMapper().getCostStatistics(start,end));
     }
     @Transactional
     public BillVo getBillVo(WaterBill w) {

@@ -66,4 +66,10 @@ public class WaterBillController {
     public Result<Map<String, Object>> getMonthlyUsage(LocalDate start, LocalDate end) {
         return Result.success(waterBillService.getMonthlyUsage(start, end));
     }
+    @Operation(summary = "每月用水费用统计和平均值")
+    @SaCheckRole("admin")
+    @GetMapping("getCostStatistics")
+    public Result<Map<String, Object>> getCostStatistics(LocalDate start, LocalDate end) {
+        return Result.success(waterBillService.getCostStatistics(start,end));
+    }
 }
