@@ -225,13 +225,16 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         List<DataItem> records = super.getBaseMapper().getMonthlySummation(start,end);
         List<String> dates = new ArrayList<>(records.size());
         List<BigDecimal> usages = new ArrayList<>(records.size());
+        List<BigDecimal> avgUsages = new ArrayList<>(records.size());
         for (DataItem item : records) {
             dates.add(item.getTime());
             usages.add(item.getNum());
+            avgUsages.add(item.getAvgNum());
         }
         Map<String, Object> map = new HashMap<>();
         map.put("date", dates);
         map.put("usage", usages);
+        map.put("avgUsage", avgUsages);
         return map;
     }
     @Transactional

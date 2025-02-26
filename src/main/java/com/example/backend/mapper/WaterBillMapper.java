@@ -20,8 +20,6 @@ import java.util.List;
 public interface WaterBillMapper extends BaseMapper<WaterBill> {
 
     List<User> getUserPhoneWithName(Integer code);
-
     List<BillExcel> selectExcel(LocalDate startOfMonth, LocalDate endOfMonth);
-
     List<DataItem> getMonthlySummation(LocalDate start, LocalDate end);
 }

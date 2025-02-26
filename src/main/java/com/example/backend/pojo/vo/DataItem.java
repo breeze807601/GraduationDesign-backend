@@ -8,4 +8,5 @@ import java.math.BigDecimal;
 public class DataItem {
     private String time;
     private BigDecimal num;
+    private BigDecimal avgNum;
 }

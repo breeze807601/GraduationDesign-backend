@@ -21,7 +21,7 @@
         order by b.id
     </select>
     <select id="getMonthlySummation" resultType="com.example.backend.pojo.vo.DataItem">
-        SELECT DATE_FORMAT(time, '%Y-%m') AS time, SUM(summation) AS num
+        SELECT DATE_FORMAT(time, '%Y-%m') AS time, SUM(summation) AS num, ROUND(AVG(summation)) AS avg_num
         FROM water_bill
         WHERE time BETWEEN #{start} AND #{end}
         GROUP BY DATE_FORMAT(time, '%Y-%m')
