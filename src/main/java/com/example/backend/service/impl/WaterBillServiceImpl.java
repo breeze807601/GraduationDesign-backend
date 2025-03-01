@@ -16,6 +16,7 @@ import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillSMSVo;
 import com.example.backend.pojo.vo.BillVo;
 import com.example.backend.pojo.vo.DataItem;
+import com.example.backend.pojo.vo.PieChartVo;
 import com.example.backend.service.IWaterBillService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.backend.utils.SendSMSUtil;
@@ -28,14 +29,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -232,6 +230,12 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         }
         return StatisticsUtil.getMap(super.getBaseMapper().getCostStatistics(start,end));
     }
+
+    @Override
+    public List<PieChartVo> getBillStatusPieChart() {
+        return super.getBaseMapper().getBillStatusPieChart();
+    }
+
     @Transactional
     public BillVo getBillVo(WaterBill w) {
         BillVo billVo = BeanUtil.copyProperties(w, BillVo.class);

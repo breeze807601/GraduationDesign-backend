@@ -7,6 +7,7 @@ import com.example.backend.pojo.entity.User;
 import com.example.backend.pojo.entity.WaterMeter;
 import com.example.backend.pojo.query.UserQuery;
 import com.example.backend.pojo.vo.BillSMSVo;
+import com.example.backend.pojo.vo.PieChartVo;
 import com.example.backend.pojo.vo.UserVo;
 import com.example.backend.service.*;
 import com.example.backend.utils.EncryptionUtil;
@@ -97,17 +98,9 @@ class BackendApplicationTests {
 
     @Test
     void mapper() {
-//        BillSMSVo vo = new BillSMSVo()
-//                .setName("张三")
-//                .setTime("2023-05-01")
-//                .setPrice(BigDecimal.valueOf(100))
-//                .setSummation(BigDecimal.valueOf(100))
-//                .setCost(BigDecimal.valueOf(100));
-//        System.out.println(vo.toString());
-        try {
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        List<PieChartVo> billStatusPieChart = electricityBillService.getBillStatusPieChart();
+        for (PieChartVo pieChartVo : billStatusPieChart) {
+            System.out.println(pieChartVo.getName());
         }
     }
 }

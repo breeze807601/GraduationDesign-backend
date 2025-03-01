@@ -8,6 +8,7 @@ import com.example.backend.pojo.entity.User;
 import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillSMSVo;
 import com.example.backend.pojo.vo.BillVo;
+import com.example.backend.pojo.vo.PieChartVo;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.time.LocalDate;
@@ -33,4 +34,5 @@ public interface IElectricityBillService extends IService<ElectricityBill> {
     Result<String> notifyPayment() throws Exception;
     Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end);
     Map<String, Object> getCostStatistics(LocalDate start, LocalDate end);
+    List<PieChartVo> getBillStatusPieChart();
 }

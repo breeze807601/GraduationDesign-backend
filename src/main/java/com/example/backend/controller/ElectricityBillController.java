@@ -5,6 +5,7 @@ import com.example.backend.common.Result;
 import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillVo;
+import com.example.backend.pojo.vo.PieChartVo;
 import com.example.backend.service.IElectricityBillService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -71,5 +73,11 @@ public class ElectricityBillController {
     @GetMapping("getCostStatistics")
     public Result<Map<String, Object>> getCostStatistics(LocalDate start, LocalDate end) {
         return Result.success(electricityBillService.getCostStatistics(start,end));
+    }
+    @Operation(summary = "统计上月账单状态饼图")
+    @SaCheckRole("admin")
+    @GetMapping("getBillStatusPieChart")
+    public Result<List<PieChartVo>> getBillStatusPieChart() {
+        return Result.success(electricityBillService.getBillStatusPieChart());
     }
 }

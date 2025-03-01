@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillVo;
+import com.example.backend.pojo.vo.PieChartVo;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.time.LocalDate;
@@ -32,4 +33,5 @@ public interface IWaterBillService extends IService<WaterBill> {
     Result<String> notifyPayment() throws Exception;
     Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end);
     Map<String, Object> getCostStatistics(LocalDate start, LocalDate end);
+    List<PieChartVo> getBillStatusPieChart();
 }

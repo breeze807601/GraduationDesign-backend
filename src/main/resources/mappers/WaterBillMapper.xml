@@ -34,4 +34,12 @@
         GROUP BY DATE_FORMAT(time, '%Y-%m')
         ORDER BY time
     </select>
+    <select id="getBillStatusPieChart" resultType="com.example.backend.pojo.vo.PieChartVo">
+        SELECT status as name, COUNT(*) AS value
+        FROM water_bill
+        WHERE time BETWEEN DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 1 MONTH) - INTERVAL DAYOFMONTH(LAST_DAY(NOW() - INTERVAL 1 MONTH)) + 1 DAY, '%Y-%m-%d')
+          AND DATE_FORMAT(LAST_DAY(NOW() - INTERVAL 1 MONTH), '%Y-%m-%d')
+          AND status != 2  -- 排除status为1的记录,即退款的
+        GROUP BY status
+    </select>
 </mapper>

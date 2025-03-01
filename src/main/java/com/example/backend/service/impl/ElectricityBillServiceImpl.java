@@ -1,15 +1,8 @@
 package com.example.backend.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.json.JSONUtil;
 import cn.hutool.poi.excel.BigExcelWriter;
 import cn.hutool.poi.excel.ExcelUtil;
-import com.aliyun.dysmsapi20170525.Client;
-import com.aliyun.dysmsapi20170525.models.SendBatchSmsRequest;
-import com.aliyun.dysmsapi20170525.models.SendSmsRequest;
-import com.aliyun.tea.TeaException;
-import com.aliyun.teautil.Common;
-import com.aliyun.teautil.models.RuntimeOptions;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.backend.common.Result;
@@ -23,9 +16,9 @@ import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillSMSVo;
 import com.example.backend.pojo.vo.BillVo;
 import com.example.backend.pojo.vo.DataItem;
+import com.example.backend.pojo.vo.PieChartVo;
 import com.example.backend.service.IElectricityBillService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.backend.utils.SMSUtil;
 import com.example.backend.utils.SendSMSUtil;
 import com.example.backend.utils.StatisticsUtil;
 import jakarta.servlet.ServletOutputStream;
@@ -39,10 +32,8 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -241,6 +232,12 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
         }
         return StatisticsUtil.getMap(super.getBaseMapper().getCostStatistics(start,end));
     }
+
+    @Override
+    public List<PieChartVo> getBillStatusPieChart() {
+        return super.getBaseMapper().getBillStatusPieChart();
+    }
+
     @Transactional
     public BillVo getBillVo(ElectricityBill e) {
         BillVo billVo = BeanUtil.copyProperties(e, BillVo.class);
