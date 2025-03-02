@@ -34,12 +34,13 @@ public class Tariff implements Serializable {
     @TableId("id")
     @JsonSerialize(using = ToStringSerializer.class)  // 解决Long精度丢失问题
     private Long id;
-
     @Schema(description = "0：电，1：水")
     @TableField("name")
     private Integer name;
-
     @Schema(description = "价格,x.xx度每元或者x.xx方每元")
     @TableField("price")
     private BigDecimal price;
+    @Schema(description = "自动扣费额度")
+    @TableField("quota")
+    private BigDecimal quota;
 }
