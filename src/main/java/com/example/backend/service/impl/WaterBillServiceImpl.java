@@ -96,6 +96,7 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
     @Override
     @Transactional
     public void automaticPayment() {
+        Tariff tariff = tariffMapper.selectOne(new LambdaQueryWrapper<Tariff>().eq(Tariff::getName, 1));
         try {
             // 待支付的账单
             List<WaterBill> bills = super.list(new LambdaQueryWrapper<WaterBill>()
@@ -112,8 +113,8 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
                     billList.add(bill);
                     continue;
                 }
-                if (bill.getCost().compareTo(new BigDecimal("70")) < 0) {
-                    // 账单金额小于200元，则为小额，自动扣款，并将要修改的值封装到list中
+                if (bill.getCost().compareTo(tariff.getQuota()) < 0) {
+                    // 账单金额小于自动扣费额度，则为小额，自动扣款，并将要修改的值封装到list中
                     userList.add(new User()
                             .setId(userId).setBalance(balance.subtract(bill.getCost())));
                     bill.setStatus(StatusEnum.PAID_IN);
