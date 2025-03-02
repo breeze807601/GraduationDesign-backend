@@ -24,5 +24,5 @@ public interface WaterBillMapper extends BaseMapper<WaterBill> {
     List<BillExcel> selectExcel(LocalDate startOfMonth, LocalDate endOfMonth);
     List<DataItem> getMonthlySummation(LocalDate start, LocalDate end);
     List<DataItem> getCostStatistics(LocalDate start, LocalDate end);
-    List<PieChartVo> getBillStatusPieChart();
+    List<PieChartVo> getBillStatusPieChart(LocalDate firstDayOfLastMonth,LocalDate lastDayOfLastMonth);
 }

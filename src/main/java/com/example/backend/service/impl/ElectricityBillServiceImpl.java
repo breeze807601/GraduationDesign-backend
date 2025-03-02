@@ -232,12 +232,15 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
         }
         return StatisticsUtil.getMap(super.getBaseMapper().getCostStatistics(start,end));
     }
-
     @Override
     public List<PieChartVo> getBillStatusPieChart() {
-        return super.getBaseMapper().getBillStatusPieChart();
+        LocalDate now = LocalDate.now();
+        // 获取上个月第一天
+        LocalDate firstDayOfLastMonth = now.minusMonths(1).with(TemporalAdjusters.firstDayOfMonth());
+        // 获取上个月最后一天
+        LocalDate lastDayOfLastMonth = now.minusMonths(1).with(TemporalAdjusters.lastDayOfMonth());
+        return super.getBaseMapper().getBillStatusPieChart(firstDayOfLastMonth,lastDayOfLastMonth);
     }
-
     @Transactional
     public BillVo getBillVo(ElectricityBill e) {
         BillVo billVo = BeanUtil.copyProperties(e, BillVo.class);
