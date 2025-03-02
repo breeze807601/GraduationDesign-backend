@@ -1,7 +1,9 @@
 package com.example.backend.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.backend.common.Result;
+import com.example.backend.pojo.entity.Building;
 import com.example.backend.service.IBuildingService;
 import com.example.backend.pojo.vo.BuildingOptionsVo;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,5 +45,16 @@ public class BuildingController {
     @GetMapping("/getBuildingId")
     public Result<Long> getBuildingId(String buildingNum, String floor, String doorplate) {
         return buildingService.getBuildingId(buildingNum, floor, doorplate);
+    }
+    @Operation(summary = "楼房列表")
+    @SaCheckRole("admin")
+    @GetMapping("/list")
+    public Result<List<Building>> list(Building building) {
+        LambdaQueryWrapper<Building> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(building.getId() != null, Building::getId, building.getId())
+                .eq(building.getBuildingNum() != null, Building::getBuildingNum, building.getBuildingNum())
+                .eq(building.getFloor() != null, Building::getFloor, building.getFloor())
+                .eq(building.getDoorplate() != null, Building::getDoorplate, building.getDoorplate());
+        return Result.success(buildingService.list(queryWrapper));
     }
 }
