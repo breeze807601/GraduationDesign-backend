@@ -8,6 +8,7 @@ import com.example.backend.service.IBuildingService;
 import com.example.backend.pojo.vo.BuildingOptionsVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,6 +35,12 @@ public class BuildingController {
     public Result<String> upload(@RequestParam("file") MultipartFile multipartFile) {
         return buildingService.upload(multipartFile);
     }
+    @Operation(summary = "导出")
+    @SaCheckRole("admin")
+    @GetMapping("/export")
+    public void export(HttpServletResponse response) throws Exception {
+        buildingService.export(response);
+    }
     @Operation(summary = "获取楼房选项")
     @SaCheckRole("admin")
     @GetMapping("/getBuildingOptions")
@@ -54,7 +61,8 @@ public class BuildingController {
         queryWrapper.eq(building.getId() != null, Building::getId, building.getId())
                 .eq(building.getBuildingNum() != null, Building::getBuildingNum, building.getBuildingNum())
                 .eq(building.getFloor() != null, Building::getFloor, building.getFloor())
-                .eq(building.getDoorplate() != null, Building::getDoorplate, building.getDoorplate());
+                .eq(building.getDoorplate() != null, Building::getDoorplate, building.getDoorplate())
+                .orderByAsc(Building::getId);
         return Result.success(buildingService.list(queryWrapper));
     }
 }

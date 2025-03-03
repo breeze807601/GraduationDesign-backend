@@ -1,7 +1,10 @@
 package com.example.backend.service.impl;
 
+import cn.hutool.poi.excel.BigExcelWriter;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
+import cn.hutool.poi.excel.ExcelWriter;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.example.backend.common.Result;
 import com.example.backend.pojo.entity.Building;
@@ -11,17 +14,24 @@ import com.example.backend.service.IBuildingService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.backend.pojo.vo.BuildingOptionsVo;
 import com.example.backend.service.IUserService;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.ibatis.session.SqlSessionException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 /**
  * <p>
  * 楼房表 服务实现类
@@ -34,6 +44,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class BuildingServiceImpl extends ServiceImpl<BuildingMapper, Building> implements IBuildingService {
     private final IUserService userService;
+    @Transactional
     @Override
     public Result<String> upload(MultipartFile multipartFile) {
         InputStream inputStream;
@@ -50,11 +61,30 @@ public class BuildingServiceImpl extends ServiceImpl<BuildingMapper, Building> i
                         .setDoorplate(objects.get(2).toString());
                 list.add(b);
             }
-            super.saveBatch(list);
+//            super.saveBatch(list);
+            // 尝试批量插入数据
+            try {
+                super.saveBatch(list);
+            } catch (DataIntegrityViolationException e) {    // 捕获唯一性冲突异常
+                throw new RuntimeException("部分数据已存在，重复的数据如下：" + extractDuplicatedBuildings(e.getMessage()));
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         return Result.success("导入成功！");
+    }
+    private String extractDuplicatedBuildings(String message) {
+        List<String> duplicatedBuildings = new ArrayList<>();
+        // 正则表达式：提取单引号包裹的内容
+        Pattern pattern = Pattern.compile("'([^']*)'");
+        Matcher matcher = pattern.matcher(message);
+        while (matcher.find()) {
+            if (matcher.group(1).equals("building.unique_building")) {
+                continue;
+            }
+            duplicatedBuildings.add(matcher.group(1));
+        }
+        return String.join("; ", duplicatedBuildings);  // 将重复的数据以分号分隔并返回
     }
     public Result<List<BuildingOptionsVo>> getBuildingOptions(Long id) {
         // 查询所有建筑信息
@@ -100,5 +130,25 @@ public class BuildingServiceImpl extends ServiceImpl<BuildingMapper, Building> i
                 .eq(Building::getDoorplate, doorplate)
                 .one();
         return Result.success(building.getId());
+    }
+
+    @Override
+    public void export(HttpServletResponse response) throws Exception  {
+        List<Building> list = super.lambdaQuery().orderByAsc(Building::getId).list();
+        BigExcelWriter writer = ExcelUtil.getBigWriter();
+        // 设置表头
+        writer.addHeaderAlias("buildingNum", "楼号");
+        writer.addHeaderAlias("floor", "楼层");
+        writer.addHeaderAlias("doorplate", "门牌");
+        // 导出设置了别名的字段
+        writer.setOnlyAlias(true);
+        writer.write(list, true);
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");
+        String fileName = URLEncoder.encode("楼房表", "UTF-8");
+        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
+        ServletOutputStream out = response.getOutputStream();
+        writer.flush(out, true);
+        out.close();
+        writer.close();
     }
 }

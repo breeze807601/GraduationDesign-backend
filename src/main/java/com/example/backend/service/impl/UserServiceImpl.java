@@ -111,21 +111,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         CellStyle dateCellStyle = writer.getWorkbook().createCellStyle();
         dateCellStyle.setDataFormat(writer.getWorkbook().createDataFormat().getFormat("@"));
         writer.getSheet().setDefaultColumnStyle(3, dateCellStyle); // 入住时间在第四列
-
         // 设置统一的列宽
         Sheet sheet = writer.getSheet();
         int uniformWidth = 15 * 256; // 统一宽度为 15 个字符
         for (int i = 0; i < 7; i++) { // 有 7 列
             sheet.setColumnWidth(i, uniformWidth);
         }
-
         // 写入数据
         writer.write(list, true);
-        // 设置响应头
+        // 设置响应头并写出到浏览器
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");
         String fileName = URLEncoder.encode("住户信息表", "UTF-8");
         response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
-        // 写出到浏览器
         ServletOutputStream out = response.getOutputStream();
         writer.flush(out, true);
         out.close();
@@ -189,28 +186,3 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
     }
 }
-/*
-    @Override
-    public Result<String> upload(MultipartFile multipartFile) {
-        InputStream inputStream;
-        try {
-            inputStream = multipartFile.getInputStream();
-            ExcelReader reader = ExcelUtil.getReader(inputStream);
-            List<User> list = new ArrayList<>();
-            // 读取第二行到最后一行数据
-            List<List<Object>> read = reader.read(2, reader.getRowCount());
-            for (List<Object> objects : read) {
-                User u = new User();
-                u.setPhone(objects.get(0).toString())
-                        .setPassword(EncryptionUtil.encrypt("111111"))
-                        .setName(objects.get(1).toString())
-                        .setSex(objects.get(2).toString().equals("女") ? SexEnum.GIRL : SexEnum.MAN)
-                        .setBuildingId(Long.parseLong(objects.get(3).toString()));
-                list.add(u);
-            }
-            super.saveBatch(list);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return Result.success("导入成功！");
-    }*/

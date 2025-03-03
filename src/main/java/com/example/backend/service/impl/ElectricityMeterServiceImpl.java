@@ -92,7 +92,6 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
         // 设置列宽
         Sheet sheet = writer.getSheet();
         sheet.setColumnWidth(0, 25 * 256);
-
         writer.write(list, true);
         // 设置响应头
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");

@@ -153,10 +153,9 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
     @Override
     public void export(HttpServletResponse response) throws Exception {
         LocalDate date = LocalDate.now();
-        LocalDate startOfMonth = date.with(TemporalAdjusters.firstDayOfMonth());
-        LocalDate endOfMonth = date.with(TemporalAdjusters.lastDayOfMonth());
-
-        List<BillExcel> list = super.getBaseMapper().selectExcel(startOfMonth,endOfMonth);
+        // 获取上个月最后一天
+        LocalDate lastDayOfLastMonth = date.with(TemporalAdjusters.firstDayOfMonth()).minusDays(1);
+        List<BillExcel> list = super.getBaseMapper().selectExcel(lastDayOfLastMonth,date);
         BigExcelWriter writer = ExcelUtil.getBigWriter();
         // 导出设置了别名的字段
         writer.addHeaderAlias("buildingNum", "楼号");
@@ -171,17 +170,16 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         writer.addHeaderAlias("cost", "总费用(元)");
         writer.addHeaderAlias("statusExcel", "状态");
         writer.setOnlyAlias(true);
-        writer.write(list, true);
 
         Sheet sheet = writer.getSheet();
         for (int i = 3; i < 11; i++) {
             sheet.setColumnWidth(i, 15 * 256);
         }
-
+        writer.write(list, true);  // 写入数据
+        // 设置响应头并写出到浏览器
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");
-        String fileName = URLEncoder.encode("本月账单", "UTF-8");
+        String fileName = URLEncoder.encode("上月用电账单", "UTF-8");
         response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
-
         ServletOutputStream out = response.getOutputStream();
         writer.flush(out, true);
         out.close();

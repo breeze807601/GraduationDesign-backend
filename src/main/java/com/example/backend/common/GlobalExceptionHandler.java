@@ -22,7 +22,6 @@ public class GlobalExceptionHandler {
     public Result<String> exceptionHandler(NotLoginException e) {
         return Result.error(401,e.getMessage());
     }
-
     /**
      * 捕获角色权限异常
      * @param e
@@ -32,12 +31,10 @@ public class GlobalExceptionHandler {
     public Result<String> handlerException(NotRoleException e) {
         return Result.error(403,"没有权限！");
     }
-
     @ExceptionHandler(value = RuntimeException.class)
     public Result<String> handlerException(RuntimeException e) {
         return Result.error(e.getMessage());
     }
-
     /**
      * 捕获SQL异常
      *
