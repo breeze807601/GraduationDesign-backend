@@ -4,5 +4,7 @@ import lombok.Data;
 
 @Data
 public class BuildingQuery extends PageQuery{
-    private Long id;
+    private String buildingNum;
+    private String floor;
+    private String doorplate;
 }

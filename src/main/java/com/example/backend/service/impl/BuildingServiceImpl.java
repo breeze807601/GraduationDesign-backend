@@ -6,10 +6,13 @@ import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.backend.common.Result;
+import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.entity.Building;
 import com.example.backend.mapper.BuildingMapper;
 import com.example.backend.pojo.entity.User;
+import com.example.backend.pojo.query.BuildingQuery;
 import com.example.backend.service.IBuildingService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.backend.pojo.vo.BuildingOptionsVo;
@@ -150,5 +153,15 @@ public class BuildingServiceImpl extends ServiceImpl<BuildingMapper, Building> i
         writer.flush(out, true);
         out.close();
         writer.close();
+    }
+    @Override
+    public PageDTO<Building> getPage(BuildingQuery query) {
+        LambdaQueryWrapper<Building> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(query.getBuildingNum() != null, Building::getBuildingNum, query.getBuildingNum())
+                .eq(query.getFloor() != null, Building::getFloor, query.getFloor())
+                .eq(query.getDoorplate() != null, Building::getDoorplate, query.getDoorplate())
+                .orderByAsc(Building::getId);
+        Page<Building> page = super.page(query.toMpPage(), queryWrapper);
+        return new PageDTO<>(page.getTotal(), page.getPages(),page.getRecords());
     }
 }

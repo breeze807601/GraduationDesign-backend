@@ -3,7 +3,10 @@ package com.example.backend.controller;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.backend.common.Result;
+import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.entity.Building;
+import com.example.backend.pojo.query.BuildingQuery;
+import com.example.backend.pojo.vo.UserVo;
 import com.example.backend.service.IBuildingService;
 import com.example.backend.pojo.vo.BuildingOptionsVo;
 import io.swagger.v3.oas.annotations.Operation;
@@ -55,14 +58,34 @@ public class BuildingController {
     }
     @Operation(summary = "楼房列表")
     @SaCheckRole("admin")
-    @GetMapping("/list")
-    public Result<List<Building>> list(Building building) {
-        LambdaQueryWrapper<Building> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(building.getId() != null, Building::getId, building.getId())
-                .eq(building.getBuildingNum() != null, Building::getBuildingNum, building.getBuildingNum())
-                .eq(building.getFloor() != null, Building::getFloor, building.getFloor())
-                .eq(building.getDoorplate() != null, Building::getDoorplate, building.getDoorplate())
-                .orderByAsc(Building::getId);
-        return Result.success(buildingService.list(queryWrapper));
+    @GetMapping("/page")
+    public Result<PageDTO<Building>> getPage(BuildingQuery query) {
+        return Result.success(buildingService.getPage(query));
+    }
+    @Operation(summary = "添加楼房")
+    @SaCheckRole("admin")
+    @PostMapping("/add")
+    public Result<String> add(@RequestBody Building building) {
+        boolean exists = buildingService.lambdaQuery().eq(Building::getBuildingNum, building.getBuildingNum())
+                .eq(Building::getFloor, building.getFloor())
+                .eq(Building::getDoorplate, building.getDoorplate()).exists();
+        return exists ? Result.error(building.getBuildingNum()+"-"+building.getFloor()+"-"+building.getDoorplate()+"已存在") :
+                buildingService.save(building) ? Result.success("添加成功") : Result.error("添加失败");
+    }
+    @Operation(summary = "修改楼房")
+    @SaCheckRole("admin")
+    @PutMapping("update")
+    public Result<String> update(@RequestBody Building building) {
+        boolean exists = buildingService.lambdaQuery().eq(Building::getBuildingNum, building.getBuildingNum())
+                .eq(Building::getFloor, building.getFloor())
+                .eq(Building::getDoorplate, building.getDoorplate()).exists();
+        return exists ? Result.error(building.getBuildingNum()+"-"+building.getFloor()+"-"+building.getDoorplate()+"已存在") :
+                buildingService.updateById(building) ? Result.success("添加成功") : Result.error("添加失败");
+    }
+    @Operation(summary = "删除楼房")
+    @SaCheckRole("admin")
+    @DeleteMapping("/delete/{id}")
+    public Result<String> delete(@PathVariable Long id) {
+        return buildingService.removeById(id) ? Result.success("删除成功") : Result.error("删除失败");
     }
 }
