@@ -39,6 +39,7 @@
         FROM water_bill
         WHERE time BETWEEN #{firstDayOfLastMonth} AND #{lastDayOfLastMonth}
           AND status != 2  -- 排除status为1的记录,即退款的
-        GROUP BY status
+        GROUP BY name
+        ORDER BY name
     </select>
 </mapper>
