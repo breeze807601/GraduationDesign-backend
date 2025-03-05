@@ -3,7 +3,7 @@ package com.example.backend.service;
 import com.example.backend.common.Result;
 import com.example.backend.pojo.entity.Admin;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.example.backend.pojo.dto.AdminPwDTO;
+import com.example.backend.pojo.dto.ChangePwDTO;
 
 /**
  * <p>
@@ -15,5 +15,5 @@ import com.example.backend.pojo.dto.AdminPwDTO;
  */
 public interface IAdminService extends IService<Admin> {
     Result<String> login(Admin a);
-    Result<String> updatePw(AdminPwDTO dto);
+    Result<String> updatePw(ChangePwDTO dto);
 }

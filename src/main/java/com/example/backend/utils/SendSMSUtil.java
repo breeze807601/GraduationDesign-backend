@@ -35,6 +35,7 @@ public class SendSMSUtil {
      * @param phone 电话
      * @param name  名字
      * @param code  短信模板码，INSUFFICIENT_BALANCE：余额不足，PAYMENT_NOTICE：待支付住户缴费通知
+     *              VERIFICATION_CODE：验证码
      */
     public static void sendPaymentNotice(String phone,String name,String code) throws Exception {
         Client client = SMSUtil.createClient();

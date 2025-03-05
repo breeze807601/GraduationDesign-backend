@@ -4,7 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.example.backend.common.Result;
 import com.example.backend.pojo.entity.Admin;
 import com.example.backend.mapper.AdminMapper;
-import com.example.backend.pojo.dto.AdminPwDTO;
+import com.example.backend.pojo.dto.ChangePwDTO;
 import com.example.backend.service.IAdminService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.backend.utils.EncryptionUtil;
@@ -34,7 +34,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         return Result.error("密码错误！");
     }
     @Override
-    public Result<String> updatePw(AdminPwDTO dto) {
+    public Result<String> updatePw(ChangePwDTO dto) {
         Admin admin = super.getById(dto.getId());
         if (!dto.getNewPw().equals(dto.getConfirmPw())) {
             return Result.error("两次密码不一致！");
