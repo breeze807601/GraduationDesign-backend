@@ -7,6 +7,7 @@ import cn.hutool.core.util.RandomUtil;
 import com.example.backend.common.Result;
 import com.example.backend.common.enums.SMSCodeEnum;
 import com.example.backend.pojo.dto.ForgotPwDTO;
+import com.example.backend.pojo.dto.UpdatePhoneDTO;
 import com.example.backend.pojo.entity.Admin;
 import com.example.backend.pojo.dto.ChangePwDTO;
 import com.example.backend.pojo.entity.User;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 public class AdminController {
     private final IAdminService adminService;
     private final StringRedisTemplate redisTemplate;
-    @SaIgnore  // 忽略此接口的认证
+    @SaIgnore
     @Operation(summary = "管理员登录")
     @PostMapping("login")
     public Result<String> login(@RequestBody Admin admin) {
@@ -48,10 +50,19 @@ public class AdminController {
         StpUtil.logout();
         return Result.success("登出成功！");
     }
-    @Operation(summary = "获取管理员信息")
+    @Operation(summary = "获取当前信息")
+    @SaCheckRole("admin")
     @GetMapping("info")
     public Result<Admin> info() {
         Long id =  Long.parseLong(StpUtil.getLoginId().toString());
+        Admin admin = adminService.getById(id);
+        admin.setPassword("");
+        return Result.success(admin);
+    }
+    @Operation(summary = "获取管理员信息")
+    @SaCheckRole("admin")
+    @GetMapping("getAdminInfo")
+    public Result<Admin> getAdminInfo(Long id) {
         Admin admin = adminService.getById(id);
         admin.setPassword("");
         return Result.success(admin);
@@ -99,5 +110,77 @@ public class AdminController {
         admin.setPassword(EncryptionUtil.encrypt(forgotPwDTO.getNewPw()));
         adminService.updateById(admin);
         return Result.success("修改成功！");
+    }
+    @Operation(summary = "修改电话")
+    @SaCheckRole("admin")
+    @PutMapping("updatePhone")
+    public Result<String> updatePhone(@RequestBody UpdatePhoneDTO dto) {
+        String code = redisTemplate.opsForValue().get(dto.getId() + "_code");
+        if (code == null) {
+            return Result.error("验证码已过期！");
+        }
+        if (!code.equals(dto.getCode())) {
+            return Result.error("验证码错误！");
+        }
+        if (adminService.lambdaQuery().eq(Admin::getPhone, dto.getPhone()).exists()) {
+            return Result.error("该手机号已存在，不可重复！");
+        }
+        Admin admin = adminService.getById(dto.getId())
+                .setPhone(dto.getPhone());
+        adminService.updateById(admin);
+        return Result.success("修改成功！");
+    }
+    @Operation(summary = "获取管理员列表")
+    @SaCheckRole("admin")
+    @GetMapping("list")
+    public Result<List<Admin>> list(Admin admin) {
+        List<Admin> list = adminService.lambdaQuery().like(admin.getPhone() != null, Admin::getPhone, admin.getPhone())
+                .like(admin.getUsername() != null, Admin::getUsername, admin.getUsername())
+                .eq(admin.getPower() != null, Admin::getPower, admin.getPower())
+                .orderByDesc(Admin::getPower).list();
+        return Result.success(list);
+    }
+    @Operation(summary = "添加管理员")
+    @SaCheckRole("superAdmin")
+    @PostMapping("add")
+    public Result<String> add(@RequestBody Admin admin) {
+        if (adminService.lambdaQuery().eq(Admin::getPhone, admin.getPhone()).exists()) {
+            return Result.error("该手机号已存在，不可重复！");
+        }
+        if (adminService.lambdaQuery().eq(Admin::getUsername, admin.getUsername()).exists()) {
+            return Result.error("该用户名已存在，不可重复！");
+        }
+        admin.setPassword(EncryptionUtil.encrypt("123456"));
+        adminService.save(admin);
+        return Result.success("添加成功！");
+    }
+    @Operation(summary = "删除管理员")
+    @SaCheckRole("superAdmin")
+    @DeleteMapping("delete")
+    public Result<String> delete(Long id) {
+        adminService.removeById(id);
+        return Result.success("删除成功！");
+    }
+    @Operation(summary = "修改管理员")
+    @SaCheckRole("superAdmin")
+    @PutMapping("update")
+    public Result<String> update(@RequestBody Admin admin) {
+        if (adminService.lambdaQuery().eq(Admin::getPhone, admin.getPhone()).ne(Admin::getId, admin.getId()).exists()) {
+            return Result.error("该手机号已存在，不可重复！");
+        }
+        if (adminService.lambdaQuery().eq(Admin::getUsername, admin.getUsername()).ne(Admin::getId, admin.getId()).exists()) {
+            return Result.error("该用户名已存在，不可重复！");
+        }
+        adminService.updateById(admin);
+        return Result.success("修改成功！");
+    }
+    @Operation(summary = "重置密码")
+    @SaCheckRole("admin")
+    @PutMapping("resetPassword")
+    public Result<String> resetPassword(Long id) {
+        Admin admin = adminService.getById(id);
+        admin.setPassword(EncryptionUtil.encrypt("123456"));
+        adminService.updateById(admin);
+        return Result.success("重置密码成功！");
     }
 }

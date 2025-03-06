@@ -27,6 +27,9 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         if(admin == null) {
             return Result.error("用户名不存在！");
         }
+        if (admin.getStatus() == 1) {
+            return Result.error("账号已被停用！");
+        }
         if (EncryptionUtil.checkPassword(a.getPassword(),admin.getPassword())) {
             StpUtil.login(admin.getId());
             return Result.success("登陆成功！");

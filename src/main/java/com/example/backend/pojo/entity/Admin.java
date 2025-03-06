@@ -28,21 +28,23 @@ import lombok.experimental.Accessors;
 public class Admin implements Serializable {
 
     private static final long serialVersionUID = 1L;
-
     @Schema(description = "主键")
     @TableId("id")
     @JsonSerialize(using = ToStringSerializer.class)  // 解决Long精度丢失问题
     private Long id;
-
     @Schema(description = "用户名")
     @TableField("username")
     private String username;
-
     @Schema(description = "密码")
     @TableField("password")
     private String password;
-
     @Schema(description = "手机号")
     @TableField("phone")
     private String phone;
+    @Schema(description = "角色")
+    @TableField("power")
+    private Integer power;
+    @Schema(description = "状态")
+    @TableField("status")
+    private Integer status;
 }
