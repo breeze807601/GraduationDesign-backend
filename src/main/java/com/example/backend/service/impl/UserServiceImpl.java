@@ -128,18 +128,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         out.close();
         writer.close();
     }
-
     @Transactional
     @Override
-    public void saveWithMeter(User user) {
-        user.setPassword(EncryptionUtil.encrypt("111111"))
-                .setTime(LocalDate.now());
-        super.save(user);
-        // 初始化记录表
-        saveMeter(user);
+    public Result<String> saveWithMeter(User user) {
+        if (super.exists(new LambdaQueryWrapper<User>().eq(User::getPhone, user.getPhone()))) {
+            return Result.error("住户已存在！手机号重复");
+        } else {
+            user.setPassword(EncryptionUtil.encrypt("111111"))
+                    .setTime(LocalDate.now());
+            super.save(user);
+            // 初始化记录表
+            saveMeter(user);
+            return Result.success("添加成功！");
+        }
     }
-
     @Override
+    @Transactional
     public void updateWithBuilding(User user) {
         User u = super.getById(user.getId());
         // 如果楼号改变，则更新记录表
@@ -148,6 +152,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
         super.updateById(user);
     }
+    @Transactional
     public void saveMeter(User user) {
         boolean flag = waterMeterMapper.exists(
                 new LambdaQueryWrapper<WaterMeter>().eq(WaterMeter::getBuildingId, user.getBuildingId()));

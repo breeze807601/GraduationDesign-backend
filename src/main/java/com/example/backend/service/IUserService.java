@@ -21,6 +21,6 @@ public interface IUserService extends IService<User> {
     PageDTO<UserVo> getUserPage(UserQuery userQuery);
     UserVo getUserVo(User user);
     void export(HttpServletResponse response) throws Exception;
-    void saveWithMeter(User user);
+    Result<String> saveWithMeter(User user);
     void updateWithBuilding(User user);
 }

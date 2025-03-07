@@ -94,14 +94,16 @@ public class UserController {
     @SaCheckRole("admin")
     @PostMapping("save")
     public Result<String> register(@RequestBody User user) {
-        userService.saveWithMeter(user);
-        return Result.success("保存成功！");
+        return userService.saveWithMeter(user);
     }
-
     @Operation(summary = "获取用户信息")
     @SaCheckRole(value = {"admin", "user"}, mode = SaMode.OR)
     @GetMapping("getUserInfo")
     public Result<UserVo> getUserInfo(Long id) {
+        // 如果id为空，则返回当前登录用户的信息
+        if (id == null) {
+            return Result.success(userService.getUserVo(userService.getById(Long.parseLong(StpUtil.getLoginId().toString()))));
+        }
         return Result.success(userService.getUserVo(userService.getById(id)));
     }
 
