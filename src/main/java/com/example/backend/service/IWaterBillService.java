@@ -10,6 +10,7 @@ import com.example.backend.pojo.vo.BillVo;
 import com.example.backend.pojo.vo.PieChartVo;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -34,4 +35,5 @@ public interface IWaterBillService extends IService<WaterBill> {
     Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end);
     Map<String, Object> getCostStatistics(LocalDate start, LocalDate end);
     List<PieChartVo> getBillStatusPieChart();
+    BigDecimal myCount();
 }

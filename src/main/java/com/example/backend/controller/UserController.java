@@ -126,7 +126,9 @@ public class UserController {
     @SaCheckRole("admin")
     @DeleteMapping("delete")
     public Result<String> delete(Long id) {
-        userService.removeById(id);
+        User user = userService.getById(id);
+        user.setDeleted(1);
+        userService.updateById(user);
         return Result.success("删除成功！");
     }
 
@@ -145,5 +147,11 @@ public class UserController {
     @GetMapping("export")
     public void export(HttpServletResponse response) throws Exception {
         userService.export(response);
+    }
+    @Operation(summary = "住户统计")
+    @SaCheckRole("admin")
+    @GetMapping("count")
+    public Result<Long> count() {
+        return Result.success(userService.count());
     }
 }

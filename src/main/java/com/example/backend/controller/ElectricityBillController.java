@@ -3,6 +3,7 @@ package com.example.backend.controller;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.example.backend.common.Result;
 import com.example.backend.pojo.dto.PageDTO;
+import com.example.backend.pojo.entity.ElectricityBill;
 import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillVo;
 import com.example.backend.pojo.vo.PieChartVo;
@@ -13,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -80,4 +82,11 @@ public class ElectricityBillController {
     public Result<List<PieChartVo>> getBillStatusPieChart() {
         return Result.success(electricityBillService.getBillStatusPieChart());
     }
+    @Operation(summary = "上月用电量统计")
+    @SaCheckRole("admin")
+    @GetMapping("count")
+    public Result<BigDecimal> count() {
+        return Result.success(electricityBillService.myCount());
+    }
+
 }

@@ -88,4 +88,10 @@ public class BuildingController {
     public Result<String> delete(@PathVariable Long id) {
         return buildingService.removeById(id) ? Result.success("删除成功") : Result.error("删除失败");
     }
+    @Operation(summary = "楼房统计")
+    @SaCheckRole("admin")
+    @GetMapping("/count")
+    public Result<Long> count() {
+        return Result.success(buildingService.count());
+    }
 }

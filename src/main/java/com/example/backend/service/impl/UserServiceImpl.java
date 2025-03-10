@@ -71,6 +71,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         LambdaQueryWrapper<User> userWrapper = new LambdaQueryWrapper<>();
         userWrapper.like(StrUtil.isNotEmpty(userQuery.getName()),User::getName,userQuery.getName())
                 .like(StrUtil.isNotEmpty(userQuery.getPhone()),User::getPhone,userQuery.getPhone())
+                .eq(User::getDeleted, 0)  // 只查询未删除的
                 .in(buildingIds!=null,User::getBuildingId,buildingIds)
                 .orderByAsc(User::getBuildingId)
                 // 排除密码和余额

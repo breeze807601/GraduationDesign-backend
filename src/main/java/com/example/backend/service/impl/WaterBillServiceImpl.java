@@ -238,6 +238,18 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         LocalDate lastDayOfLastMonth = now.minusMonths(1).with(TemporalAdjusters.lastDayOfMonth());
         return super.getBaseMapper().getBillStatusPieChart(firstDayOfLastMonth,lastDayOfLastMonth);
     }
+    @Override
+    public BigDecimal myCount() {
+        // 获取上个月的第一天和最后一天
+        LocalDate today = LocalDate.now();
+        LocalDate firstDayOfLastMonth = today.minusMonths(1).with(TemporalAdjusters.firstDayOfMonth());
+        LocalDate lastDayOfLastMonth = today.minusMonths(1).with(TemporalAdjusters.lastDayOfMonth());
+        List<DataItem> monthlySummation = super.getBaseMapper().getMonthlySummation(firstDayOfLastMonth, lastDayOfLastMonth);
+        if (!monthlySummation.isEmpty()) {
+            return monthlySummation.get(0).getNum();
+        }
+        return new BigDecimal("0");
+    }
     @Transactional
     public BillVo getBillVo(WaterBill w) {
         BillVo billVo = BeanUtil.copyProperties(w, BillVo.class);

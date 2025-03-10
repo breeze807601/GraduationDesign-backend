@@ -68,6 +68,5 @@ public class User implements Serializable {
 
     @Schema(description = "逻辑删除")
     @TableField("deleted")
-    @TableLogic
     private Integer deleted;
 }

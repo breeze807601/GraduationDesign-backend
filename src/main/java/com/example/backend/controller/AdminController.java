@@ -61,8 +61,8 @@ public class AdminController {
     }
     @Operation(summary = "获取管理员信息")
     @SaCheckRole("admin")
-    @GetMapping("getAdminInfo")
-    public Result<Admin> getAdminInfo(Long id) {
+    @GetMapping("getAdminInfo/{id}")
+    public Result<Admin> getAdminInfo(@PathVariable Long id) {
         Admin admin = adminService.getById(id);
         admin.setPassword("");
         return Result.success(admin);
@@ -156,8 +156,8 @@ public class AdminController {
     }
     @Operation(summary = "删除管理员")
     @SaCheckRole("superAdmin")
-    @DeleteMapping("delete")
-    public Result<String> delete(Long id) {
+    @DeleteMapping("delete/{id}")
+    public Result<String> delete(@PathVariable Long id) {
         adminService.removeById(id);
         return Result.success("删除成功！");
     }
@@ -176,8 +176,8 @@ public class AdminController {
     }
     @Operation(summary = "重置密码")
     @SaCheckRole("admin")
-    @PutMapping("resetPassword")
-    public Result<String> resetPassword(Long id) {
+    @PutMapping("resetPassword/{id}")
+    public Result<String> resetPassword(@PathVariable Long id) {
         Admin admin = adminService.getById(id);
         admin.setPassword(EncryptionUtil.encrypt("123456"));
         adminService.updateById(admin);
