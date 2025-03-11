@@ -8,9 +8,10 @@
                  SELECT em.id, em.user_id, em.building_id, em.reading, em.time,
                         ROW_NUMBER() OVER (PARTITION BY em.user_id ORDER BY em.time DESC) AS rn
                  FROM electricity_meter em
+                 JOIN user ON em.user_id = user.id AND user.deleted = 0
                  WHERE em.time BETWEEN #{lastMonth} AND #{now}
              ) em
-                 JOIN user u ON u.id = em.user_id
+                 JOIN user u ON u.id = em.user_id AND u.deleted = 0
                  JOIN building b ON em.building_id = b.id
         WHERE em.rn = 1
         ORDER BY u.building_id

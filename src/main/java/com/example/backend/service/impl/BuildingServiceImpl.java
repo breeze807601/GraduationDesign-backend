@@ -94,7 +94,8 @@ public class BuildingServiceImpl extends ServiceImpl<BuildingMapper, Building> i
         List<Building> buildings = this.list();
         List<Long> ids = null;
         if (id != null) {
-            ids = userService.getBaseMapper().selectObjs(Wrappers.lambdaQuery(User.class).select(User::getBuildingId));
+            ids = userService.getBaseMapper().selectObjs(Wrappers.lambdaQuery(User.class)
+                            .eq(User::getDeleted, 0).select(User::getBuildingId));
         }
         // 使用 Map 来存储楼号和其对应的 BuildingOption
         Map<String, BuildingOptionsVo> buildingMap = new HashMap<>();

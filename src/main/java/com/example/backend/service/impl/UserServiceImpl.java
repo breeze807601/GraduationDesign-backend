@@ -132,7 +132,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Transactional
     @Override
     public Result<String> saveWithMeter(User user) {
-        if (super.exists(new LambdaQueryWrapper<User>().eq(User::getPhone, user.getPhone()))) {
+        if (super.exists(new LambdaQueryWrapper<User>()
+                .eq(User::getPhone, user.getPhone())
+                .notIn(User::getDeleted, 1))) {
             return Result.error("住户已存在！手机号重复");
         } else {
             user.setPassword(EncryptionUtil.encrypt("111111"))
@@ -171,13 +173,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             waterMeterMapper.insert(new WaterMeter()
                     .setUserId(user.getId())
                     .setPreviousReading(waterMeter.getReading())
-                    .setReading(BigDecimal.valueOf(0.00))
+                    .setReading(waterMeter.getReading())
                     .setTime(LocalDate.now())
                     .setBuildingId(user.getBuildingId()));
             electricityMeterMapper.insert(new ElectricityMeter()
                     .setUserId(user.getId())
                     .setPreviousReading(electricityMeter.getReading())
-                    .setReading(BigDecimal.valueOf(0.00))
+                    .setReading(electricityMeter.getReading())
                     .setTime(LocalDate.now())
                     .setBuildingId(user.getBuildingId()));
         }else {

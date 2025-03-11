@@ -8,9 +8,10 @@
                  SELECT wm.id, wm.user_id, wm.building_id, wm.reading, wm.time,
                         ROW_NUMBER() OVER (PARTITION BY wm.user_id ORDER BY wm.time DESC) AS rn
                  FROM water_meter wm
+                 JOIN user ON wm.user_id = user.id AND user.deleted = 0
                  WHERE wm.time BETWEEN #{lastMonth} AND #{now}
              ) wm
-                 JOIN user u ON u.id = wm.user_id
+                 JOIN user u ON u.id = wm.user_id AND u.deleted = 0
                  JOIN building b ON wm.building_id = b.id
         WHERE wm.rn = 1
         ORDER BY u.building_id
