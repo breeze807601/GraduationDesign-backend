@@ -108,7 +108,7 @@ class BackendApplicationTests {
     }
     @Test
     void smsT() {
-        task.checkBalance();
-        task.automaticDeductionOfElectricityBills();
+//        task.checkBalance();
+        task.smallAutomaticRecharge();
     }
 }

@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
@@ -22,8 +24,13 @@ public class Task {
     private final IElectricityMeterService electricityMeterService;
     private final IWaterMeterService waterMeterService;
 
-    @Scheduled(cron = "0 0 8 * * ?")  //每天早上8点执行，检查余额，到临界值就提醒
-    @Transactional
+    /**
+     * 每日8点执行，检查余额，到临界值50就提醒
+     * 方法后再运行smallAutomaticRecharge()checkBalance()
+     * smallAutomaticRecharge()小额充值后可用额度不足的，则发送短信,足够的则扣除额度
+     * 然后，checkBalance()给余额不足的发短信
+     */
+    @Scheduled(cron = "0 30 8 * * ?")  //每天早上8点半执行
     public void checkBalance() {
         try {
             List<User> list = userService.list(new LambdaQueryWrapper<User>()
@@ -36,39 +43,23 @@ public class Task {
             throw new RuntimeException(e);
         }
     }
-    // 自动小额充值，处理账单
-    @Scheduled(cron = "0 30 8 * * ?")  //每天早上8点半执行
-    public void automaticDeductionOfElectricityBills() {
+    @Transactional
+    @Scheduled(cron = "0 0 8 * * ?")
+    public void smallAutomaticRecharge() {
         try {
-            // 获取电表自动充值结果
-            Map<String, List<User>> electricityMap = electricityMeterService.smallAutomaticRecharge();
-            List<User> notifyUsers = electricityMap != null ? electricityMap.get("notifyUsers") : new ArrayList<>();
-            List<User> insufficientList = electricityMap != null ? electricityMap.get("insufficientList") : new ArrayList<>();
-            // 获取水表自动充值结果
-            Map<String, List<User>> waterMap = waterMeterService.smallAutomaticRecharge();
-            List<User> notifyUsers1 = waterMap != null ? waterMap.get("notifyUsers") : new ArrayList<>();
-            List<User> insufficientList1 = waterMap != null ? waterMap.get("insufficientList") : new ArrayList<>();
-            // 去重，减少短信次数
-            if (notifyUsers != null) {
-                if (notifyUsers1 != null) {
-                    notifyUsers.addAll(notifyUsers1);
-                }
+            List<User> electricityList = electricityMeterService.smallAutomaticRecharge();
+            List<User> waterList = waterMeterService.smallAutomaticRecharge();
+            // 检查是否为空
+            if (electricityList == null) {
+                electricityList = Collections.emptyList();
             }
-            Set<User> set1 = new HashSet<>(notifyUsers);
-            List<User> notifyUserSetList = new ArrayList<>(set1);
-
-            if (insufficientList != null) {
-                if (insufficientList1 != null) {
-                    insufficientList.addAll(insufficientList1);
-                }
+            if (waterList == null) {
+                waterList = Collections.emptyList();
             }
-            Set<User> set2 = new HashSet<>(insufficientList);
-            List<User> insufficientSetList = new ArrayList<>(set2);
-
-            for (User user : notifyUserSetList) {
-                SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480530041");
-            }
-            for (User user : insufficientSetList) {
+            electricityList.addAll(waterList);
+            Set<User> set = new HashSet<>(electricityList);
+            List<User> list = new ArrayList<>(set);
+            for (User user : list) {
                 SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480625070");
             }
         } catch (Exception e) {

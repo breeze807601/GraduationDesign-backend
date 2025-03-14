@@ -128,14 +128,13 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
 
     @Override
     @Transactional
-    public Map<String, List<User>> smallAutomaticRecharge() {
+    public List<User> smallAutomaticRecharge() {
         Tariff tariff = tariffMapper.selectOne(new LambdaQueryWrapper<Tariff>().eq(Tariff::getName, 0));
         // 小额自动充值，先获取可用余额不足的订单
         List<ElectricityBill> electricityBills = electricityBillMapper.selectList(
                 new LambdaQueryWrapper<ElectricityBill>()
                 .eq(ElectricityBill::getStatus, 4));
         if (electricityBills == null || electricityBills.isEmpty()) {
-            System.out.println("没有余额不足的账单需要处理！");
             return null;
         }
         Map<Long, Map<String, Object>> userMap = userMapper.getUserMap(true);
@@ -146,7 +145,6 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
         electricityMeters.clear();  // 清空列表，用来存储需要修改的记录
 
         List<User> modUsers = new ArrayList<>();      // 需要修改的住户
-        List<User> notifyUsers = new ArrayList<>();   // 需要通知的住户
         List<User> insufficientList = new ArrayList<>();  // 可用额度仍然不足的住户
         BigDecimal price = tariff.getPrice().multiply(new BigDecimal("15")); // 充值所需价格，15为充值进入记录表的可用额度
         // 遍历账单，进行处理
@@ -159,8 +157,6 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
                     .setPhone(userMap.get(bill.getUserId()).get("phone").toString());
             // 判断用户余额是否足够
             if (user.getBalance().compareTo(price) < 0) {
-                // 用户余额不足，无法进行小额充值，通知用户余额不足
-                notifyUsers.add(user);
                 continue;
             }
             // 充值
@@ -182,13 +178,15 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
         }
         // 修改用户和电表记录
         if (!modUsers.isEmpty()) {
-            userMapper.updateBatch(modUsers);
+            userMapper.updateById(modUsers);
         }
-        super.updateBatchById(electricityMeters);
-        Map<String, List<User>> map = new HashMap<>();
-        map.put("notifyUsers",notifyUsers);  // 账户余额不足的通知
-        map.put("insufficientList",insufficientList);  // 可用额度不足的住户通知
-        return map;
+        if (!electricityBills.isEmpty()) {
+            electricityBillMapper.updateById(electricityBills);
+        }
+        if (!electricityMeters.isEmpty()) {
+            super.updateBatchById(electricityMeters);
+        }
+        return insufficientList;
     }
 
     @Transactional

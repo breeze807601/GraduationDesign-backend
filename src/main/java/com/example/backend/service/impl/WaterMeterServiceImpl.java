@@ -127,14 +127,13 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
         return Result.success(time);
     }
     @Override
-    public Map<String, List<User>> smallAutomaticRecharge() {
+    public List<User> smallAutomaticRecharge() {
         Tariff tariff = tariffMapper.selectOne(new LambdaQueryWrapper<Tariff>().eq(Tariff::getName, 0));
         // 小额自动充值，先获取可用余额不足的订单
         List<WaterBill> waterBills = waterBillMapper.selectList(
                 new LambdaQueryWrapper<WaterBill>()
                         .eq(WaterBill::getStatus, 4));
         if (waterBills == null || waterBills.isEmpty()) {
-            System.out.println("没有余额不足的账单需要处理！");
             return null;
         }
         Map<Long, Map<String, Object>> userMap = userMapper.getUserMap(true);
@@ -145,7 +144,6 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
         waterMeters.clear();  // 清空列表，用来存储需要修改的记录
 
         List<User> modUsers = new ArrayList<>();      // 需要修改的住户
-        List<User> notifyUsers = new ArrayList<>();   // 需要通知的住户
         List<User> insufficientList = new ArrayList<>();  // 可用额度仍然不足的住户
         BigDecimal price = tariff.getPrice().multiply(new BigDecimal("15")); // 充值所需价格，15为充值进入记录表的可用额度
         // 遍历账单，进行处理
@@ -156,10 +154,8 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
                     .setBalance(new BigDecimal(userMap.get(bill.getUserId()).get("balance").toString()))
                     .setName(userMap.get(bill.getUserId()).get("name").toString())
                     .setPhone(userMap.get(bill.getUserId()).get("phone").toString());
-            // 判断用户余额是否足够
-            if (user.getBalance().compareTo(price) < 0) {
-                // 用户余额不足，无法进行小额充值
-                notifyUsers.add(user);
+            // 余额不足，跳过
+            if (new BigDecimal(userMap.get(bill.getUserId()).get("balance").toString()).compareTo(price) < 0) {
                 continue;
             }
             // 充值
@@ -167,7 +163,7 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
             modUsers.add(user);
             // 更新用电记录的可用额度
             WaterMeter waterMeter = meterMap.get(bill.getWaterMeterId());
-            waterMeter.setAvailableLimit(waterMeter.getAvailableLimit().add(new BigDecimal("15")));  // 加15度
+            waterMeter.setAvailableLimit(waterMeter.getAvailableLimit().add(new BigDecimal("15")));  // 加15方
             // 处理支付账单，判断是否够减去账单的电量
             if (bill.getSummation().compareTo(waterMeter.getAvailableLimit()) < 0 ) {
                 // 减去额度
@@ -179,15 +175,17 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
             }
             waterMeters.add(waterMeter);
         }
-        // 修改用户和电表记录
+        // 修改用户信息和电表记录
         if (!modUsers.isEmpty()) {
-            userMapper.updateBatch(modUsers);
+            userMapper.updateById(modUsers);
         }
-        super.updateBatchById(waterMeters);
-        Map<String, List<User>> map = new HashMap<>();
-        map.put("notifyUsers",notifyUsers);  // 账户余额不足的通知
-        map.put("insufficientList",insufficientList);  // 可用额度不足的住户通知
-        return map;
+        if (!waterBills.isEmpty()) {
+            waterBillMapper.updateById(waterBills);
+        }
+        if (!waterMeters.isEmpty()) {
+            super.updateBatchById(waterMeters);
+        }
+        return insufficientList;
     }
     @Override
     public void updateWithReading(Long id, BigDecimal reading) {

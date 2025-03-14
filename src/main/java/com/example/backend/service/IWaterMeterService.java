@@ -27,6 +27,6 @@ public interface IWaterMeterService extends IService<WaterMeter> {
     PageDTO<MeterVo> getPage(MeterQuery query);
     void export(HttpServletResponse response) throws Exception;
     Result<LocalDate> upload(MultipartFile multipartFile);
-    Map<String, List<User>> smallAutomaticRecharge();
+    List<User> smallAutomaticRecharge();
     void updateWithReading(Long id, BigDecimal reading);
 }
