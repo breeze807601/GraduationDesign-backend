@@ -30,19 +30,6 @@ public class Task {
      * smallAutomaticRecharge()小额充值后可用额度不足的，则发送短信,足够的则扣除额度
      * 然后，checkBalance()给余额不足的发短信
      */
-    @Scheduled(cron = "0 30 8 * * ?")  //每天早上8点半执行
-    public void checkBalance() {
-        try {
-            List<User> list = userService.list(new LambdaQueryWrapper<User>()
-                    .le(User::getBalance,50)
-                    .eq(User::getDeleted,0));
-            for (User user : list) {
-                SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480530041");
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
     @Transactional
     @Scheduled(cron = "0 0 8 * * ?")
     public void smallAutomaticRecharge() {
@@ -61,6 +48,19 @@ public class Task {
             List<User> list = new ArrayList<>(set);
             for (User user : list) {
                 SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480625070");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    @Scheduled(cron = "0 10 8 * * ?")  //每天早上8点10分执行
+    public void checkBalance() {
+        try {
+            List<User> list = userService.list(new LambdaQueryWrapper<User>()
+                    .le(User::getBalance,50)
+                    .eq(User::getDeleted,0));
+            for (User user : list) {
+                SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480530041");
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
