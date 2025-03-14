@@ -1,6 +1,7 @@
 package com.example.backend.service;
 
 import com.example.backend.common.Result;
+import com.example.backend.pojo.entity.User;
 import com.example.backend.pojo.entity.WaterMeter;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.backend.pojo.dto.PageDTO;
@@ -11,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -25,5 +27,6 @@ public interface IWaterMeterService extends IService<WaterMeter> {
     PageDTO<MeterVo> getPage(MeterQuery query);
     void export(HttpServletResponse response) throws Exception;
     Result<LocalDate> upload(MultipartFile multipartFile);
+    Map<String, List<User>> smallAutomaticRecharge();
     void updateWithReading(Long id, BigDecimal reading);
 }

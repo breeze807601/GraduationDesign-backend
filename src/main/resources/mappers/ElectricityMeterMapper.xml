@@ -3,12 +3,12 @@
 <mapper namespace="com.example.backend.mapper.ElectricityMeterMapper">
 
     <select id="selectExcel" resultType="com.example.backend.pojo.excelVo.MeterExcel">
-        SELECT u.name, b.id, b.building_num, b.floor, b.doorplate, em.reading AS previousReading
+        SELECT u.name, b.id, b.building_num, b.floor, b.doorplate, em.reading AS previousReading,em.available_limit AS availableLimit
         FROM (
-                 SELECT em.id, em.user_id, em.building_id, em.reading, em.time,
+                 SELECT em.id, em.user_id, em.building_id, em.reading, em.time, em.available_limit,
                         ROW_NUMBER() OVER (PARTITION BY em.user_id ORDER BY em.time DESC) AS rn
                  FROM electricity_meter em
-                 JOIN user ON em.user_id = user.id AND user.deleted = 0
+                          JOIN user ON em.user_id = user.id AND user.deleted = 0
                  WHERE em.time BETWEEN #{lastMonth} AND #{now}
              ) em
                  JOIN user u ON u.id = em.user_id AND u.deleted = 0

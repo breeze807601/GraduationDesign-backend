@@ -10,6 +10,7 @@ import com.example.backend.pojo.vo.BillSMSVo;
 import com.example.backend.pojo.vo.PieChartVo;
 import com.example.backend.pojo.vo.UserVo;
 import com.example.backend.service.*;
+import com.example.backend.task.Task;
 import com.example.backend.utils.EncryptionUtil;
 import com.example.backend.utils.SMSUtil;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,8 @@ class BackendApplicationTests {
     ITariffService tariffService;
     @Autowired
     IElectricityBillService electricityBillService;
+    @Autowired
+    Task task;
     @Test
     void contextLoads() {
         String password = EncryptionUtil.encrypt("admin");
@@ -102,5 +105,10 @@ class BackendApplicationTests {
         for (PieChartVo pieChartVo : billStatusPieChart) {
             System.out.println(pieChartVo.getName());
         }
+    }
+    @Test
+    void smsT() {
+        task.checkBalance();
+        task.automaticDeductionOfElectricityBills();
     }
 }

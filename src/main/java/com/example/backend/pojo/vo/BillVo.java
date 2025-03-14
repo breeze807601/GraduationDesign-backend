@@ -26,6 +26,7 @@ public class BillVo implements Serializable {
     private Long meterId;
     private BigDecimal previousReading;
     private BigDecimal reading;
+    private BigDecimal availableLimit;
     @JsonSerialize(using = ToStringSerializer.class)
     private Long userId;
     private String name;

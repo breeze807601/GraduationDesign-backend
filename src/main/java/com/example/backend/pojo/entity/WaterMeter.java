@@ -55,4 +55,7 @@ public class WaterMeter implements Serializable {
     @Schema(description = "住户")
     @TableField("user_id")
     private Long userId;
+    @Schema(description = "可用额度")
+    @TableField("available_limit")
+    private BigDecimal availableLimit;
 }

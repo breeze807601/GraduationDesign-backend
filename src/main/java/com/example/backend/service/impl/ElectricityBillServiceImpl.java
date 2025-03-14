@@ -55,14 +55,15 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
     @Override
     public void mySave(LocalDate now) {
         Tariff tariff = tariffMapper.selectOne(new LambdaQueryWrapper<Tariff>().eq(Tariff::getName, 0));
-        // 查询当天的电表数据
         LambdaQueryWrapper<ElectricityMeter> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ElectricityMeter::getTime, now);
         List<ElectricityMeter> electricityMeters = electricityMeterMapper.selectList(wrapper);
-
         List<ElectricityBill> list = new ArrayList<>();
         for (ElectricityMeter electricityMeter : electricityMeters) {
-            // 电量
+            // 判断本次读数和上次读数是否是0，是0则是今天添加的住户，不需要保存
+            if (electricityMeter.getReading().compareTo(BigDecimal.ZERO) == 0 && electricityMeter.getPreviousReading().compareTo(BigDecimal.ZERO) == 0) {
+                continue;
+            }
             BigDecimal summation = electricityMeter.getReading().subtract(electricityMeter.getPreviousReading());
             ElectricityBill electricityBill = new ElectricityBill()
                     .setTime(now)
@@ -72,8 +73,18 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
                     .setCost(summation.multiply(tariff.getPrice()))
                     .setUserId(electricityMeter.getUserId())
                     .setBuildingId(electricityMeter.getBuildingId());
+            if (summation.compareTo(electricityMeter.getAvailableLimit()) <= 0) {
+                // 减去额度
+                electricityMeter.setAvailableLimit(electricityMeter.getAvailableLimit().subtract(summation));
+                electricityBill.setStatus(StatusEnum.PAID_IN);
+            } else {
+                // 可用额度不够，状态为可用额度不足
+                electricityBill.setStatus(StatusEnum.INSUFFICIENT_AVAILABLE_CREDIT_LIMIT);
+            }
             list.add(electricityBill);
         }
+        // 更新电表数据，保存账单
+        electricityMeterMapper.updateById(electricityMeters);
         super.saveBatch(list);
     }
     @Transactional
@@ -264,7 +275,8 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
                 .setName(user.getName())
                 .setMeterId(electricityMeter.getId())
                 .setPreviousReading(electricityMeter.getPreviousReading())
-                .setReading(electricityMeter.getReading());
+                .setReading(electricityMeter.getReading())
+                .setAvailableLimit(electricityMeter.getAvailableLimit());
         return billVo;
     }
 }

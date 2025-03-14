@@ -58,9 +58,12 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         LambdaQueryWrapper<WaterMeter> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(WaterMeter::getTime, now);
         List<WaterMeter> waterMeters =  waterMeterMapper.selectList(wrapper);
-
         List<WaterBill> list = new ArrayList<>();
         for (WaterMeter waterMeter : waterMeters) {
+            // 判断本次读数和上次读数是否是0，是0则是今天添加的住户，不需要保存
+            if (waterMeter.getReading().compareTo(BigDecimal.ZERO) == 0 && waterMeter.getPreviousReading().compareTo(BigDecimal.ZERO) == 0) {
+                continue;
+            }
             BigDecimal summation = waterMeter.getReading().subtract(waterMeter.getPreviousReading());
             WaterBill waterBill = new WaterBill()
                     .setTime(now)
@@ -70,8 +73,18 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
                     .setCost(summation.multiply(tariff.getPrice()))
                     .setUserId(waterMeter.getUserId())
                     .setBuildingId(waterMeter.getBuildingId());
+            if (summation.compareTo(waterMeter.getAvailableLimit()) <= 0) {
+                // 减去额度
+                waterMeter.setAvailableLimit(waterMeter.getAvailableLimit().subtract(summation));
+                waterBill.setStatus(StatusEnum.PAID_IN);
+            } else {
+                // 可用额度不够，状态为可用额度不足
+                waterBill.setStatus(StatusEnum.INSUFFICIENT_AVAILABLE_CREDIT_LIMIT);
+           }
             list.add(waterBill);
         }
+        // 更新水表数据，保存账单
+        waterMeterMapper.updateById(waterMeters);
         super.saveBatch(list);
     }
 

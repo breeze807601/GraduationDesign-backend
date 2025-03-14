@@ -3,6 +3,7 @@ package com.example.backend.pojo.excelVo;
 import lombok.Data;
 
 import java.math.BigDecimal;
+
 @Data
 public class MeterExcel {
     private Long id;
@@ -13,4 +14,5 @@ public class MeterExcel {
     private String name;
     private BigDecimal previousReading;
     private BigDecimal reading;
+    private BigDecimal availableLimit;
 }

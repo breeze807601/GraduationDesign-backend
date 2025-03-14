@@ -22,4 +22,5 @@ public class MeterVo implements Serializable {
     private LocalDate time;
     private BigDecimal previousReading;
     private BigDecimal reading;
+    private BigDecimal availableLimit;
 }

@@ -8,14 +8,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.backend.common.Result;
 import com.example.backend.common.enums.StatusEnum;
-import com.example.backend.mapper.BuildingMapper;
-import com.example.backend.mapper.ElectricityBillMapper;
-import com.example.backend.mapper.UserMapper;
-import com.example.backend.pojo.entity.Building;
-import com.example.backend.pojo.entity.ElectricityBill;
-import com.example.backend.pojo.entity.ElectricityMeter;
-import com.example.backend.mapper.ElectricityMeterMapper;
-import com.example.backend.pojo.entity.User;
+import com.example.backend.mapper.*;
+import com.example.backend.pojo.entity.*;
 import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.excelVo.MeterExcel;
 import com.example.backend.pojo.query.MeterQuery;
@@ -35,9 +29,8 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAdjusters;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -54,6 +47,7 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
     private final BuildingMapper buildingMapper;
     private final UserMapper userMapper;
     private final ElectricityBillMapper electricityBillMapper;
+    private final TariffMapper tariffMapper;
     @Transactional
     @Override
     public PageDTO<MeterVo> getPage(MeterQuery query) {
@@ -72,10 +66,9 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
     @Transactional
     @Override
     public void export(HttpServletResponse response) throws Exception {
-        // 获取当前日期和上个月的最后一天
-        LocalDate now = LocalDate.now();
-        LocalDate lastMonth = now.minusMonths(1).with(TemporalAdjusters.lastDayOfMonth());
-        List<MeterExcel> list = super.getBaseMapper().selectExcel(now, lastMonth);  // 查询出电表记录
+        // 获取昨天记录，一天更新一次
+        LocalDate now = LocalDate.now().minusDays(1);
+        List<MeterExcel> list = super.getBaseMapper().selectExcel(now, now);
         BigExcelWriter writer = ExcelUtil.getBigWriter();
         // 导出设置了别名的字段
         writer.addHeaderAlias("excelId", "编号");
@@ -83,6 +76,7 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
         writer.addHeaderAlias("floor", "楼层");
         writer.addHeaderAlias("doorplate", "门牌");
         writer.addHeaderAlias("name", "住户姓名");
+        writer.addHeaderAlias("availableLimit", "可用额度");
         writer.addHeaderAlias("previousReading", "上次读数");
         writer.addHeaderAlias("reading", "本次读数");
         writer.setOnlyAlias(true);
@@ -112,7 +106,6 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
             inputStream = multipartFile.getInputStream();
             ExcelReader reader = ExcelUtil.getReader(inputStream);
             List<ElectricityMeter> list = new ArrayList<>();
-            // 构建userMap,key为buildingId,value为userId
             Map<Long,Map<String,Object>> userMap = userMapper.getIdMap();
             List<List<Object>> read = reader.read(1, reader.getRowCount());
             for (List<Object> objects : read) {
@@ -120,8 +113,9 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
                 Long buildingId = Long.valueOf(objects.get(0).toString());
                 e.setBuildingId(buildingId)
                         .setUserId(Long.valueOf(userMap.get(buildingId).get("id").toString()))
-                        .setPreviousReading(new BigDecimal(objects.get(5).toString()))
-                        .setReading(new BigDecimal(objects.get(6).toString()))
+                        .setAvailableLimit(new BigDecimal(objects.get(5).toString()))   // 可用额度
+                        .setPreviousReading(new BigDecimal(objects.get(6).toString()))
+                        .setReading(new BigDecimal(objects.get(7).toString()))
                         .setTime(time);
                 list.add(e);
             }
@@ -131,6 +125,72 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
         }
         return Result.success(time);
     }
+
+    @Override
+    @Transactional
+    public Map<String, List<User>> smallAutomaticRecharge() {
+        Tariff tariff = tariffMapper.selectOne(new LambdaQueryWrapper<Tariff>().eq(Tariff::getName, 0));
+        // 小额自动充值，先获取可用余额不足的订单
+        List<ElectricityBill> electricityBills = electricityBillMapper.selectList(
+                new LambdaQueryWrapper<ElectricityBill>()
+                .eq(ElectricityBill::getStatus, 4));
+        if (electricityBills == null || electricityBills.isEmpty()) {
+            System.out.println("没有余额不足的账单需要处理！");
+            return null;
+        }
+        Map<Long, Map<String, Object>> userMap = userMapper.getUserMap(true);
+
+        List<ElectricityMeter> electricityMeters = super.lambdaQuery()
+                .in(ElectricityMeter::getId, electricityBills.stream().map(ElectricityBill::getElectricityMeterId).toList()).list();
+        Map<Long, ElectricityMeter> meterMap = electricityMeters.stream().collect(Collectors.toMap(ElectricityMeter::getId, Function.identity()));
+        electricityMeters.clear();  // 清空列表，用来存储需要修改的记录
+
+        List<User> modUsers = new ArrayList<>();      // 需要修改的住户
+        List<User> notifyUsers = new ArrayList<>();   // 需要通知的住户
+        List<User> insufficientList = new ArrayList<>();  // 可用额度仍然不足的住户
+        BigDecimal price = tariff.getPrice().multiply(new BigDecimal("15")); // 充值所需价格，15为充值进入记录表的可用额度
+        // 遍历账单，进行处理
+        for (ElectricityBill bill : electricityBills) {
+            // 获取用户
+            User user = new User()
+                    .setId(bill.getUserId())
+                    .setBalance(new BigDecimal(userMap.get(bill.getUserId()).get("balance").toString()))
+                    .setName(userMap.get(bill.getUserId()).get("name").toString())
+                    .setPhone(userMap.get(bill.getUserId()).get("phone").toString());
+            // 判断用户余额是否足够
+            if (user.getBalance().compareTo(price) < 0) {
+                // 用户余额不足，无法进行小额充值，通知用户余额不足
+                notifyUsers.add(user);
+                continue;
+            }
+            // 充值
+            user.setBalance(user.getBalance().subtract(price));
+            modUsers.add(user);
+            // 更新用电记录的可用额度
+            ElectricityMeter electricityMeter = meterMap.get(bill.getElectricityMeterId());
+            electricityMeter.setAvailableLimit(electricityMeter.getAvailableLimit().add(new BigDecimal("15")));  // 加15度
+            // 处理支付账单，判断是否够减去账单的电量
+            if (bill.getSummation().compareTo(electricityMeter.getAvailableLimit()) < 0 ) {
+                // 减去额度
+                electricityMeter.setAvailableLimit(electricityMeter.getAvailableLimit().subtract(bill.getSummation()));
+                bill.setStatus(StatusEnum.PAID_IN);
+            } else {
+                // 可用额度不够，发送通知
+                insufficientList.add(user);
+            }
+            electricityMeters.add(electricityMeter);
+        }
+        // 修改用户和电表记录
+        if (!modUsers.isEmpty()) {
+            userMapper.updateBatch(modUsers);
+        }
+        super.updateBatchById(electricityMeters);
+        Map<String, List<User>> map = new HashMap<>();
+        map.put("notifyUsers",notifyUsers);  // 账户余额不足的通知
+        map.put("insufficientList",insufficientList);  // 可用额度不足的住户通知
+        return map;
+    }
+
     @Transactional
     @Override
     public void updateWithReading(Long id, BigDecimal reading) {

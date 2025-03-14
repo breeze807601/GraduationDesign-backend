@@ -1,46 +1,86 @@
 package com.example.backend.task;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.backend.common.enums.SMSCodeEnum;
 import com.example.backend.common.enums.StatusEnum;
 import com.example.backend.pojo.entity.User;
-import com.example.backend.service.IElectricityBillService;
-import com.example.backend.service.IWaterBillService;
+import com.example.backend.service.*;
 import com.example.backend.utils.SendSMSUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Component
 @RequiredArgsConstructor
 public class Task {
     private final IElectricityBillService electricityBillService;
     private final IWaterBillService waterBillService;
+    private final IUserService userService;
+    private final IElectricityMeterService electricityMeterService;
+    private final IWaterMeterService waterMeterService;
 
-    /**
-     * 两个automaticPayment执行完毕
-     * 住户订单分为三种：已支付，待支付，余额不足
-     */
-    @Scheduled(cron = "0 0 1 1 * ?")  //每月一号凌晨1点执行一次
+    @Scheduled(cron = "0 0 8 * * ?")  //每天早上8点执行，检查余额，到临界值就提醒
+    @Transactional
+    public void checkBalance() {
+        try {
+            List<User> list = userService.list(new LambdaQueryWrapper<User>()
+                    .le(User::getBalance,50)
+                    .eq(User::getDeleted,0));
+            for (User user : list) {
+                SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480530041");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    // 自动小额充值，处理账单
+    @Scheduled(cron = "0 30 8 * * ?")  //每天早上8点半执行
     public void automaticDeductionOfElectricityBills() {
         try {
-            // 自动在用户余额中扣除电费，仅限金额小于200元的账单
-            electricityBillService.automaticPayment();
-        } catch (RuntimeException e) {
-            e.printStackTrace();
+            // 获取电表自动充值结果
+            Map<String, List<User>> electricityMap = electricityMeterService.smallAutomaticRecharge();
+            List<User> notifyUsers = electricityMap != null ? electricityMap.get("notifyUsers") : new ArrayList<>();
+            List<User> insufficientList = electricityMap != null ? electricityMap.get("insufficientList") : new ArrayList<>();
+            // 获取水表自动充值结果
+            Map<String, List<User>> waterMap = waterMeterService.smallAutomaticRecharge();
+            List<User> notifyUsers1 = waterMap != null ? waterMap.get("notifyUsers") : new ArrayList<>();
+            List<User> insufficientList1 = waterMap != null ? waterMap.get("insufficientList") : new ArrayList<>();
+            // 去重，减少短信次数
+            if (notifyUsers != null) {
+                if (notifyUsers1 != null) {
+                    notifyUsers.addAll(notifyUsers1);
+                }
+            }
+            Set<User> set1 = new HashSet<>(notifyUsers);
+            List<User> notifyUserSetList = new ArrayList<>(set1);
+
+            if (insufficientList != null) {
+                if (insufficientList1 != null) {
+                    insufficientList.addAll(insufficientList1);
+                }
+            }
+            Set<User> set2 = new HashSet<>(insufficientList);
+            List<User> insufficientSetList = new ArrayList<>(set2);
+
+            for (User user : notifyUserSetList) {
+                SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480530041");
+            }
+            for (User user : insufficientSetList) {
+                SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480625070");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
     @Scheduled(cron = "0 0 2 1 * ?")  //每月一号凌晨2点执行一次
     public void automaticDeductionOfWaterBills() {
         try {
-            // 自动在用户余额中扣除水费，仅限金额小于70元的账单
             waterBillService.automaticPayment();
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
     @Scheduled(cron = "0 30 2 1 * ?")  //每月一号凌晨2点30执行一次
