@@ -145,7 +145,7 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
 
         List<User> modUsers = new ArrayList<>();      // 需要修改的住户
         List<User> insufficientList = new ArrayList<>();  // 可用额度仍然不足的住户
-        BigDecimal price = tariff.getPrice().multiply(new BigDecimal("15")); // 充值所需价格，15为充值进入记录表的可用额度
+        BigDecimal price = tariff.getPrice().multiply(new BigDecimal("10")); // 充值所需价格，10为充值进入记录表的可用额度
         // 遍历账单，进行处理
         for (WaterBill bill : waterBills) {
             // 获取用户
@@ -163,7 +163,7 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
             modUsers.add(user);
             // 更新用电记录的可用额度
             WaterMeter waterMeter = meterMap.get(bill.getWaterMeterId());
-            waterMeter.setAvailableLimit(waterMeter.getAvailableLimit().add(new BigDecimal("15")));  // 加15方
+            waterMeter.setAvailableLimit(waterMeter.getAvailableLimit().add(new BigDecimal("10")));  // 加10方
             // 处理支付账单，判断是否够减去账单的电量
             if (bill.getSummation().compareTo(waterMeter.getAvailableLimit()) < 0 ) {
                 // 减去额度
