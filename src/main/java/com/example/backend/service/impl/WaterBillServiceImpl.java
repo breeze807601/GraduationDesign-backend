@@ -79,7 +79,7 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
                 waterBill.setStatus(StatusEnum.PAID_IN);
             } else {
                 // 可用额度不够，状态为可用额度不足
-                waterBill.setStatus(StatusEnum.INSUFFICIENT_AVAILABLE_CREDIT_LIMIT);
+                waterBill.setStatus(StatusEnum.REFUND);
            }
             list.add(waterBill);
         }
@@ -95,7 +95,7 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         List<Long> userIds = userMapper.getIds(q.getName());
         LambdaQueryWrapper<WaterBill> wrapper = new LambdaQueryWrapper<>();
         if (q.getTime() != null) {
-            wrapper.like(WaterBill::getTime, YearMonth.from(q.getTime()));
+            wrapper.like(WaterBill::getTime, q.getTime());
         }
         wrapper.in(buildingIds!=null, WaterBill::getBuildingId,buildingIds)
                 .in(userIds!=null, WaterBill::getUserId,userIds)

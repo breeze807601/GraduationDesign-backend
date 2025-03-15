@@ -16,6 +16,7 @@ import com.example.backend.pojo.query.MeterQuery;
 import com.example.backend.pojo.vo.MeterVo;
 import com.example.backend.service.IElectricityMeterService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.backend.utils.SendSMSUtil;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -125,7 +126,6 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
         }
         return Result.success(time);
     }
-
     @Override
     @Transactional
     public List<User> smallAutomaticRecharge() {
@@ -133,7 +133,7 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
         // 小额自动充值，先获取可用余额不足的订单
         List<ElectricityBill> electricityBills = electricityBillMapper.selectList(
                 new LambdaQueryWrapper<ElectricityBill>()
-                .eq(ElectricityBill::getStatus, 4));
+                .eq(ElectricityBill::getStatus, 3));
         if (electricityBills == null || electricityBills.isEmpty()) {
             return null;
         }
@@ -146,7 +146,7 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
 
         List<User> modUsers = new ArrayList<>();      // 需要修改的住户
         List<User> insufficientList = new ArrayList<>();  // 可用额度仍然不足的住户
-        BigDecimal price = tariff.getPrice().multiply(new BigDecimal("15")); // 充值所需价格，15为充值进入记录表的可用额度
+        BigDecimal price = tariff.getPrice().multiply(new BigDecimal("20")); // 充值所需价格，20为充值进入记录表的可用额度
         // 遍历账单，进行处理
         for (ElectricityBill bill : electricityBills) {
             // 获取用户
@@ -164,7 +164,7 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
             modUsers.add(user);
             // 更新用电记录的可用额度
             ElectricityMeter electricityMeter = meterMap.get(bill.getElectricityMeterId());
-            electricityMeter.setAvailableLimit(electricityMeter.getAvailableLimit().add(new BigDecimal("15")));  // 加15度
+            electricityMeter.setAvailableLimit(electricityMeter.getAvailableLimit().add(new BigDecimal("20")));  // 加20度
             // 处理支付账单，判断是否够减去账单的电量
             if (bill.getSummation().compareTo(electricityMeter.getAvailableLimit()) < 0 ) {
                 // 减去额度
@@ -179,6 +179,11 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
         // 修改用户和电表记录
         if (!modUsers.isEmpty()) {
             userMapper.updateById(modUsers);
+            try {
+                automaticRechargeReminder(modUsers);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
         if (!electricityBills.isEmpty()) {
             electricityBillMapper.updateById(electricityBills);
@@ -188,48 +193,64 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
         }
         return insufficientList;
     }
-
+    @Override
+    public void automaticRechargeReminder(List<User> users) throws Exception {     // 发送信息提醒住户自动充值了一次
+        for (User user : users) {
+            SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480440085");
+        }
+    }
     @Transactional
     @Override
     public void updateWithReading(Long id, BigDecimal reading) {
-        LocalDate now = LocalDate.now();
-        // 修改后的电表记录
+        // 修改前记录
         ElectricityMeter electricityMeter = super.getById(id);
-        // 判断该电表是否有新记录
+        electricityMeter.setReading(reading);
         if (judge(electricityMeter.getBuildingId(),electricityMeter.getTime())) {
             throw new RuntimeException("电表已有新记录，不可修改！");
         }
-        electricityMeter.setReading(reading).setTime(now);
         // 账单
         ElectricityBill electricityBill = electricityBillMapper.selectOne(new LambdaQueryWrapper<ElectricityBill>()
                 .eq(ElectricityBill::getElectricityMeterId, id));
-        // 修改前的总费用
-        BigDecimal c = electricityBill.getCost();
+        BigDecimal oldSummation = electricityBill.getSummation();    // 旧用电量
         // 修改后的参数
-        BigDecimal summation = reading.subtract(electricityMeter.getPreviousReading());
-        BigDecimal cost = summation.multiply(electricityBill.getPrice());
-        if (electricityBill.getStatus().getCode() == 0) {           // 如果是待支付的账单，则直接修改
-            electricityBill.setSummation(summation)
-                    .setCost(cost)
-                    .setTime(LocalDate.now());
-            electricityBillMapper.updateById(electricityBill);
-        } else if (electricityBill.getStatus().getCode() == 1) {    // 账单状态已支付，修改原账单状态，退款创建新账单
-            userMapper.refund(electricityBill.getUserId(), c);
-            electricityBill.setStatus(StatusEnum.REFUND);  // 修改状态为退款
-            electricityBillMapper.updateById(electricityBill);
-            ElectricityBill eb = new ElectricityBill()
-                    .setTime(now)
-                    .setSummation(summation)
-                    .setPrice(electricityBill.getPrice())
-                    .setCost(cost)
-                    .setBuildingId(electricityMeter.getBuildingId())
-                    .setUserId(electricityMeter.getUserId())
-                    .setElectricityMeterId(electricityMeter.getId());
-            electricityBillMapper.insert(eb);
-        } else if (electricityBill.getStatus().getCode() == 2) {
-            throw new RuntimeException("该账单已退款");
+        BigDecimal newSummation = reading.subtract(electricityMeter.getPreviousReading());
+        BigDecimal newCost = newSummation.multiply(electricityBill.getPrice());
+        BigDecimal consumptionChange = oldSummation.subtract(newSummation);      // 正数则旧电量比新电量多，负数则相反
+        if (consumptionChange.compareTo(BigDecimal.ZERO) < 0) {   // 负数则可用额度要再减去他们的差
+            // 判断可用额度是否足够，即可用额度是否大于他们差的绝对值
+            if (electricityMeter.getAvailableLimit().compareTo(consumptionChange.abs()) < 0) {
+                // 如果可用额度不足，小额自动充值
+                try {
+                    boolean recharge = recharge(id);
+                    if (recharge) {   // 充值成功,修改可用额度
+                        electricityMeter.setAvailableLimit(electricityMeter.getAvailableLimit().add(new BigDecimal("10")));
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
+        electricityMeter.setAvailableLimit(electricityMeter.getAvailableLimit().add(consumptionChange));   // 修改记录后的可用额度
+        // 修改账单
+        electricityBill.setSummation(newSummation)
+                .setCost(newCost)
+                .setStatus(StatusEnum.PAID_IN);
+        electricityBillMapper.updateById(electricityBill);
         super.updateById(electricityMeter);
+    }
+    @Transactional
+    public boolean recharge(Long id) throws Exception {
+        User user = userMapper.selectById(id);
+        Tariff tariff = tariffMapper.selectOne(new LambdaQueryWrapper<Tariff>().eq(Tariff::getName, 0));
+        BigDecimal price = tariff.getPrice().multiply(new BigDecimal("10")); // 充值所需价格
+        if (user.getBalance().compareTo(price) < 0) {
+            SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(),"SMS_480530041");     // 余额告急提醒
+            return false;
+        }
+        user.setBalance(user.getBalance().subtract(price));
+        userMapper.updateById(user);
+        SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480440085");   // 充值提醒
+        return true;
     }
     public boolean judge(Long buildingId,LocalDate time) {
         LambdaQueryWrapper<ElectricityMeter> wrapper = new LambdaQueryWrapper<>();

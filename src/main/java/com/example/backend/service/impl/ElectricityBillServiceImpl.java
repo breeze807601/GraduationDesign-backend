@@ -78,8 +78,8 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
                 electricityMeter.setAvailableLimit(electricityMeter.getAvailableLimit().subtract(summation));
                 electricityBill.setStatus(StatusEnum.PAID_IN);
             } else {
-                // 可用额度不够，状态为可用额度不足
-                electricityBill.setStatus(StatusEnum.INSUFFICIENT_AVAILABLE_CREDIT_LIMIT);
+                // 可用额度不够，状态为余额不足
+                electricityBill.setStatus(StatusEnum.REFUND);
             }
             list.add(electricityBill);
         }
@@ -94,7 +94,7 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
         List<Long> userIds = userMapper.getIds(q.getName());
         LambdaQueryWrapper<ElectricityBill> wrapper = new LambdaQueryWrapper<>();
         if (q.getTime() != null) {
-            wrapper.like(ElectricityBill::getTime, YearMonth.from(q.getTime()));
+            wrapper.like(ElectricityBill::getTime, q.getTime());
         }
         wrapper.in(buildingIds!=null, ElectricityBill::getBuildingId,buildingIds)
                 .in(userIds!=null, ElectricityBill::getUserId,userIds)
@@ -122,7 +122,7 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
                 Long userId = bill.getUserId();
                 BigDecimal balance = new BigDecimal(userMap.get(userId).get("balance").toString());
                 if (balance.compareTo(bill.getCost()) < 0) {  // 余额不足
-                    bill.setStatus(StatusEnum.INSUFFICIENT_BALANCE);
+                    bill.setStatus(StatusEnum.REFUND);
                     billList.add(bill);
                     continue;
                 }

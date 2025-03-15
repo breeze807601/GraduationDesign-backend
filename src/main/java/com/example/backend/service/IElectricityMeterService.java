@@ -28,5 +28,6 @@ public interface IElectricityMeterService extends IService<ElectricityMeter> {
     void export(HttpServletResponse response) throws Exception;
     Result<LocalDate> upload(MultipartFile multipartFile);
     List<User> smallAutomaticRecharge();
+    void automaticRechargeReminder(List<User> users) throws Exception;
     void updateWithReading(Long id, BigDecimal reading);
 }

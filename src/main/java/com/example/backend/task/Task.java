@@ -25,8 +25,7 @@ public class Task {
     private final IWaterMeterService waterMeterService;
 
     /**
-     * 每日8点执行，检查余额，到临界值50就提醒
-     * 方法后再运行smallAutomaticRecharge()checkBalance()
+     * smallAutomaticRecharge()方法后再运行checkBalance()
      * smallAutomaticRecharge()小额充值后可用额度不足的，则发送短信,足够的则扣除额度
      * 然后，checkBalance()给余额不足的发短信
      */
@@ -46,6 +45,7 @@ public class Task {
             electricityList.addAll(waterList);
             Set<User> set = new HashSet<>(electricityList);
             List<User> list = new ArrayList<>(set);
+            // 去重,减少短信次数
             for (User user : list) {
                 SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480625070");
             }
@@ -59,6 +59,7 @@ public class Task {
             List<User> list = userService.list(new LambdaQueryWrapper<User>()
                     .le(User::getBalance,50)
                     .eq(User::getDeleted,0));
+            // 余额小于50的短信通知住户
             for (User user : list) {
                 SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480530041");
             }
@@ -66,7 +67,8 @@ public class Task {
             throw new RuntimeException(e);
         }
     }
-    @Scheduled(cron = "0 0 2 1 * ?")  //每月一号凌晨2点执行一次
+
+    /*@Scheduled(cron = "0 0 2 1 * ?")  //每月一号凌晨2点执行一次
     public void automaticDeductionOfWaterBills() {
         try {
             waterBillService.automaticPayment();
@@ -115,5 +117,5 @@ public class Task {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
+    }*/
 }
