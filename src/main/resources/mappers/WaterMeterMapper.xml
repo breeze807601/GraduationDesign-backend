@@ -17,4 +17,11 @@
         WHERE wm.rn = 1
         ORDER BY u.building_id
     </select>
+    <select id="checkTheCreditLimit" resultType="java.lang.Long">
+        SELECT user_id
+        FROM (
+                 SELECT *, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY time DESC) AS rn
+                 FROM water_meter) AS subquery
+        WHERE rn = 1 AND 30 >= subquery.available_limit;
+    </select>
 </mapper>

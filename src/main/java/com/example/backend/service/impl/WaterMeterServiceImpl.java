@@ -55,7 +55,7 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
         List<Long> buildingIds = buildingMapper.getIdList(query.getBuildingNum(), query.getFloor(), query.getDoorplate());
         LambdaQueryWrapper<WaterMeter> wrapper = new LambdaQueryWrapper<>();
         if (query.getTime() != null) {
-            wrapper.like(WaterMeter::getTime, YearMonth.from(query.getTime()));
+            wrapper.eq(WaterMeter::getTime, query.getTime());
         }
         wrapper.in(buildingIds!=null, WaterMeter::getBuildingId,buildingIds)
                 .orderByDesc(WaterMeter::getTime)
@@ -133,7 +133,7 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
         // 小额自动充值，先获取可用余额不足的订单
         List<WaterBill> waterBills = waterBillMapper.selectList(
                 new LambdaQueryWrapper<WaterBill>()
-                        .eq(WaterBill::getStatus, 3));
+                        .eq(WaterBill::getStatus, 2));
         if (waterBills == null || waterBills.isEmpty()) {
             return null;
         }
@@ -208,36 +208,42 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
         if (judge(waterMeter.getBuildingId(),waterMeter.getTime())) {
             throw new RuntimeException("水表已有新记录，不可修改！");
         }
-        // 账单
         WaterBill waterBill = waterBillMapper.selectOne(new LambdaQueryWrapper<WaterBill>()
                 .eq(WaterBill::getWaterMeterId, id));
-        BigDecimal oldSummation = waterBill.getSummation();    // 旧用水量
         // 修改后的参数
         BigDecimal newSummation = reading.subtract(waterMeter.getPreviousReading());
         BigDecimal newCost = newSummation.multiply(waterBill.getPrice());
-        BigDecimal consumptionChange = oldSummation.subtract(newSummation); // 正数则旧水量比新水量多，负数则相反
-        if (consumptionChange.compareTo(BigDecimal.ZERO) < 0) {   // 负数则可用额度要再减去他们的差
-            // 判断可用额度是否足够，即可用额度是否大于他们差的绝对值
-            if (waterMeter.getAvailableLimit().compareTo(consumptionChange.abs()) < 0) {
-                // 如果可用额度不足，小额自动充值
-                try {
-                    boolean recharge = recharge(id);
-                    if (recharge) {   // 充值成功,修改可用额度
-                        waterMeter.setAvailableLimit(waterMeter.getAvailableLimit().add(new BigDecimal("10")));
+        if (waterBill.getStatus().getCode() == 1) {  // 如果是已支付
+            BigDecimal consumptionChange = waterBill.getSummation().subtract(newSummation);
+            if (consumptionChange.compareTo(BigDecimal.ZERO) < 0) {
+                if (waterMeter.getAvailableLimit().compareTo(consumptionChange.abs()) < 0) {
+                    // 如果可用额度不足，小额自动充值一次
+                    try {
+                        boolean recharge = recharge(waterBill.getUserId());
+                        if (recharge) {   // 充值成功,修改可用额度
+                            waterMeter.setAvailableLimit(waterMeter.getAvailableLimit().add(new BigDecimal("30")));
+                        } else {
+                            throw new RuntimeException("住户余额不足");
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
                 }
+                waterMeter.setAvailableLimit(waterMeter.getAvailableLimit().add(consumptionChange));
             }
         }
-        waterMeter.setAvailableLimit(waterMeter.getAvailableLimit().add(consumptionChange));   // 修改记录后的可用额度
         // 修改账单
         waterBill.setSummation(newSummation)
-                .setCost(newCost)
-                .setStatus(StatusEnum.PAID_IN);
+                .setCost(newCost);
         waterBillMapper.updateById(waterBill);
         super.updateById(waterMeter);
     }
+
+    @Override
+    public List<Long> checkTheCreditLimit() {
+        return super.getBaseMapper().checkTheCreditLimit();
+    }
+
     @Transactional
     public boolean recharge(Long id) throws Exception {
         User user = userMapper.selectById(id);

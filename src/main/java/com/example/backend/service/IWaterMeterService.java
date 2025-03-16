@@ -30,4 +30,5 @@ public interface IWaterMeterService extends IService<WaterMeter> {
     List<User> smallAutomaticRecharge();
     void automaticRechargeReminder(List<User> users) throws Exception;
     void updateWithReading(Long id, BigDecimal reading);
+    List<Long> checkTheCreditLimit();
 }

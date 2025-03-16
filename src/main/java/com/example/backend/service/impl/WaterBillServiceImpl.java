@@ -95,7 +95,7 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         List<Long> userIds = userMapper.getIds(q.getName());
         LambdaQueryWrapper<WaterBill> wrapper = new LambdaQueryWrapper<>();
         if (q.getTime() != null) {
-            wrapper.like(WaterBill::getTime, q.getTime());
+            wrapper.eq(WaterBill::getTime, q.getTime());
         }
         wrapper.in(buildingIds!=null, WaterBill::getBuildingId,buildingIds)
                 .in(userIds!=null, WaterBill::getUserId,userIds)
@@ -126,13 +126,13 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
                     billList.add(bill);
                     continue;
                 }
-                if (bill.getCost().compareTo(tariff.getQuota()) < 0) {
-                    // 账单金额小于自动扣费额度，则为小额，自动扣款，并将要修改的值封装到list中
-                    userList.add(new User()
-                            .setId(userId).setBalance(balance.subtract(bill.getCost())));
-                    bill.setStatus(StatusEnum.PAID_IN);
-                    billList.add(bill);
-                }
+//                if (bill.getCost().compareTo(tariff.getQuota()) < 0) {
+//                    // 账单金额小于自动扣费额度，则为小额，自动扣款，并将要修改的值封装到list中
+//                    userList.add(new User()
+//                            .setId(userId).setBalance(balance.subtract(bill.getCost())));
+//                    bill.setStatus(StatusEnum.PAID_IN);
+//                    billList.add(bill);
+//                }
             }
             if (!userList.isEmpty()) {
                 userMapper.updateBatch(userList);

@@ -18,4 +18,5 @@ import java.util.List;
 public interface WaterMeterMapper extends BaseMapper<WaterMeter> {
 
     List<MeterExcel> selectExcel(LocalDate now, LocalDate lastMonth);
+    List<Long> checkTheCreditLimit();
 }

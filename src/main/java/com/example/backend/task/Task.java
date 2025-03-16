@@ -3,6 +3,7 @@ package com.example.backend.task;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.backend.common.enums.SMSCodeEnum;
 import com.example.backend.common.enums.StatusEnum;
+import com.example.backend.pojo.entity.ElectricityMeter;
 import com.example.backend.pojo.entity.User;
 import com.example.backend.service.*;
 import com.example.backend.utils.SendSMSUtil;
@@ -18,8 +19,6 @@ import java.util.stream.Stream;
 @Component
 @RequiredArgsConstructor
 public class Task {
-    private final IElectricityBillService electricityBillService;
-    private final IWaterBillService waterBillService;
     private final IUserService userService;
     private final IElectricityMeterService electricityMeterService;
     private final IWaterMeterService waterMeterService;
@@ -67,7 +66,30 @@ public class Task {
             throw new RuntimeException(e);
         }
     }
-
+    @Scheduled(cron = "0 0 9 * * ?")  //每天早上9点执行
+    @Transactional
+    public void noticeOfInsufficientCreditLimit() {
+        try {
+            List<Long> electricityMeters = electricityMeterService.checkTheCreditLimit();
+            List<Long> waterMeters = waterMeterService.checkTheCreditLimit();
+            if (electricityMeters == null) {
+                electricityMeters = Collections.emptyList();
+            }
+            if (waterMeters == null) {
+                waterMeters = Collections.emptyList();
+            }
+            electricityMeters.addAll(waterMeters);
+            Set<Long> set = new HashSet<>(electricityMeters);
+            List<Long> ids = new ArrayList<>(set);
+            List<User> list = userService.lambdaQuery().in(User::getId, ids).list();
+            // 可用额度小于临界值的,提前通知
+            for (User user : list) {
+                SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480400158");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
     /*@Scheduled(cron = "0 0 2 1 * ?")  //每月一号凌晨2点执行一次
     public void automaticDeductionOfWaterBills() {
         try {

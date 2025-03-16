@@ -30,4 +30,5 @@ public interface IElectricityMeterService extends IService<ElectricityMeter> {
     List<User> smallAutomaticRecharge();
     void automaticRechargeReminder(List<User> users) throws Exception;
     void updateWithReading(Long id, BigDecimal reading);
+    List<Long> checkTheCreditLimit();
 }

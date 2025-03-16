@@ -18,4 +18,6 @@ import java.util.List;
 public interface ElectricityMeterMapper extends BaseMapper<ElectricityMeter> {
     // 查询需要导出的数据，在时间区间内，该套房最新一条用电记录
     List<MeterExcel> selectExcel(LocalDate now, LocalDate lastMonth);
+
+    List<Long> checkTheCreditLimit();
 }

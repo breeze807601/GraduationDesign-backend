@@ -40,7 +40,4 @@ public class Tariff implements Serializable {
     @Schema(description = "价格,x.xx度每元或者x.xx方每元")
     @TableField("price")
     private BigDecimal price;
-    @Schema(description = "自动扣费额度")
-    @TableField("quota")
-    private BigDecimal quota;
 }

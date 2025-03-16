@@ -16,4 +16,11 @@
         WHERE em.rn = 1
         ORDER BY u.building_id
     </select>
+    <select id="checkTheCreditLimit" resultType="com.example.backend.pojo.entity.ElectricityMeter">
+        SELECT user_id
+        FROM (
+                 SELECT *, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY time DESC) AS rn
+                 FROM electricity_meter) AS subquery
+        WHERE rn = 1 AND 50 >= subquery.available_limit;
+    </select>
 </mapper>
