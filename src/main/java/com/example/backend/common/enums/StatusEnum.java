@@ -9,8 +9,7 @@ import lombok.Getter;
 public enum StatusEnum {
     PAYMENT_IN_PROGRESS(0,"待支付"),
     PAID_IN(1,"已支付"),
-    REFUND(2,"余额不足"),
-    INSUFFICIENT_BALANCE(3,"已退款");
+    REFUND(2,"余额不足");
     // EnumValue标记数据库存的值是code
     @EnumValue
     private final Integer code;

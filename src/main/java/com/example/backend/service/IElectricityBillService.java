@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.entity.User;
 import com.example.backend.pojo.query.BillQuery;
-import com.example.backend.pojo.vo.BillSMSVo;
 import com.example.backend.pojo.vo.BillVo;
 import com.example.backend.pojo.vo.PieChartVo;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,14 +26,11 @@ import java.util.Map;
 public interface IElectricityBillService extends IService<ElectricityBill> {
     void mySave(LocalDate now);
     PageDTO<BillVo> getPage(BillQuery billQuery);
-    void automaticPayment();
-    void paidSMSNotification() throws Exception;
     List<User> getUserPhoneWithName(Integer status);
-    void export(HttpServletResponse response) throws Exception;
-    Result<String> noticeOfInsufficientBalance() throws Exception;
-    Result<String> notifyPayment() throws Exception;
+    void export(HttpServletResponse response,LocalDate startTime, LocalDate endTime) throws Exception;
     Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end);
     Map<String, Object> getCostStatistics(LocalDate start, LocalDate end);
     List<PieChartVo> getBillStatusPieChart();
     BigDecimal myCount();
+    Result<String> notifyRecharge() throws Exception;
 }

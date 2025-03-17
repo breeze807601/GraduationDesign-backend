@@ -18,7 +18,7 @@
             join building b on b.id = eb.building_id
             join electricity_meter em on eb.electricity_meter_id = em.id
         where eb.time BETWEEN #{startOfMonth} AND #{endOfMonth}
-        order by b.id
+        order by eb.time desc,b.id
     </select>
     <select id="getMonthlySummation" resultType="com.example.backend.pojo.vo.DataItem">
         SELECT DATE_FORMAT(time, '%Y-%m') AS time, SUM(summation) AS num, ROUND(AVG(summation)) AS avg_num         # avg_num平均数，取整

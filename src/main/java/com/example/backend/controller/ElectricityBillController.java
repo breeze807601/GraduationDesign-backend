@@ -46,23 +46,17 @@ public class ElectricityBillController {
     public Result<PageDTO<BillVo>> list(BillQuery billQuery) {
         return Result.success(electricityBillService.getPage(billQuery));
     }
-    @Operation(summary = "导出本月账单")
+    @Operation(summary = "导出账单")
     @SaCheckRole("admin")
     @GetMapping("export")
-    public void export(HttpServletResponse response) throws Exception {
-        electricityBillService.export(response);
+    public void export(HttpServletResponse response,LocalDate startTime, LocalDate endTime) throws Exception {
+        electricityBillService.export(response,startTime,endTime);
     }
-    @Operation(summary = "通知余额不足住户")
+    @Operation(summary = "通知住户充值")
     @SaCheckRole("admin")
-    @PostMapping("noticeOfInsufficientBalance")
-    public Result<String> noticeOfInsufficientBalance() throws Exception {
-        return electricityBillService.noticeOfInsufficientBalance();
-    }
-    @Operation(summary = "通知住户缴费")
-    @SaCheckRole("admin")
-    @PostMapping("notifyPayment")
-    public Result<String> notifyPayment() throws Exception {
-        return electricityBillService.notifyPayment();
+    @PostMapping("notifyRecharge")
+    public Result<String> notifyRecharge() throws Exception {
+        return electricityBillService.notifyRecharge();
     }
     @Operation(summary = "统计时间段内每月用电量")
     @SaCheckRole("admin")

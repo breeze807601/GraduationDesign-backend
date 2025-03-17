@@ -26,14 +26,11 @@ import java.util.Map;
 public interface IWaterBillService extends IService<WaterBill> {
     void mySave(LocalDate now);
     PageDTO<BillVo> getPage(BillQuery billQuery);
-    void automaticPayment();
-    void paidSMSNotification() throws Exception;
     List<User> getUserPhoneWithName(Integer status);
-    void export(HttpServletResponse response) throws Exception;
-    Result<String> noticeOfInsufficientBalance() throws Exception;
-    Result<String> notifyPayment() throws Exception;
+    void export(HttpServletResponse response,LocalDate startTime, LocalDate endTime) throws Exception;
     Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end);
     Map<String, Object> getCostStatistics(LocalDate start, LocalDate end);
     List<PieChartVo> getBillStatusPieChart();
     BigDecimal myCount();
+    Result<String> notifyRecharge() throws Exception;
 }

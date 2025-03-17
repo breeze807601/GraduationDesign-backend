@@ -50,20 +50,14 @@ public class WaterBillController {
     @Operation(summary = "导出本月账单")
     @SaCheckRole("admin")
     @GetMapping("export")
-    public void export(HttpServletResponse response) throws Exception {
-        waterBillService.export(response);
+    public void export(HttpServletResponse response,LocalDate startTime, LocalDate endTime) throws Exception {
+        waterBillService.export(response,startTime,endTime);
     }
-    @Operation(summary = "通知余额不足住户")
+    @Operation(summary = "通知住户充值")
     @SaCheckRole("admin")
-    @PostMapping("noticeOfInsufficientBalance")
-    public Result<String> noticeOfInsufficientBalance() throws Exception {
-        return waterBillService.noticeOfInsufficientBalance();
-    }
-    @Operation(summary = "通知住户缴费")
-    @SaCheckRole("admin")
-    @PostMapping("notifyPayment")
-    public Result<String> notifyPayment() throws Exception {
-        return waterBillService.notifyPayment();
+    @PostMapping("notifyRecharge")
+    public Result<String> notifyRecharge() throws Exception {
+        return waterBillService.notifyRecharge();
     }
     @Operation(summary = "统计时间段内每月用电量")
     @SaCheckRole("admin")

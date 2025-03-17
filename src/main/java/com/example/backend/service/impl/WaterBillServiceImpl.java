@@ -107,68 +107,12 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         return new PageDTO<>(page.getTotal(), page.getPages(), vos);
     }
     @Override
-    @Transactional
-    public void automaticPayment() {
-        Tariff tariff = tariffMapper.selectOne(new LambdaQueryWrapper<Tariff>().eq(Tariff::getName, 1));
-        try {
-            // 待支付的账单
-            List<WaterBill> bills = super.list(new LambdaQueryWrapper<WaterBill>()
-                    .eq(WaterBill::getStatus, StatusEnum.PAYMENT_IN_PROGRESS.getCode()));
-            // 用户
-            Map<Long, Map<String, Object>> userMap = userMapper.getUserMap(false);
-            List<WaterBill> billList = new ArrayList<>();
-            List<User> userList = new ArrayList<>();
-            for (WaterBill bill : bills) {
-                Long userId = bill.getUserId();
-                BigDecimal balance = new BigDecimal(userMap.get(userId).get("balance").toString());
-                if (balance.compareTo(bill.getCost()) < 0) {  // 余额不足
-                    bill.setStatus(StatusEnum.INSUFFICIENT_BALANCE);
-                    billList.add(bill);
-                    continue;
-                }
-//                if (bill.getCost().compareTo(tariff.getQuota()) < 0) {
-//                    // 账单金额小于自动扣费额度，则为小额，自动扣款，并将要修改的值封装到list中
-//                    userList.add(new User()
-//                            .setId(userId).setBalance(balance.subtract(bill.getCost())));
-//                    bill.setStatus(StatusEnum.PAID_IN);
-//                    billList.add(bill);
-//                }
-            }
-            if (!userList.isEmpty()) {
-                userMapper.updateBatch(userList);
-            }
-            super.updateBatchById(billList);
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-        }
-    }
-    @Override
-    @Transactional
-    public void paidSMSNotification() throws Exception {
-        List<WaterBill> list = super.list(new LambdaQueryWrapper<WaterBill>()
-                .eq(WaterBill::getStatus, StatusEnum.PAID_IN.getCode()));
-        Map<Long, Map<String, Object>> userMap = userMapper.getUserMap(true);
-        for (WaterBill bill : list) {
-            String phone = userMap.get(bill.getUserId()).get("phone").toString();
-            BillSMSVo billSMSVo = new BillSMSVo()
-                    .setName(userMap.get(bill.getUserId()).get("name").toString())
-                    .setTime(bill.getTime().toString())
-                    .setPrice(bill.getPrice())
-                    .setSummation(bill.getSummation())
-                    .setCost(bill.getCost());
-            SendSMSUtil.paidReminder(phone, billSMSVo, SMSCodeEnum.REMINDER_OF_PAID_ELECTRICITY.getCode());
-        }
-    }
-    @Override
     public List<User> getUserPhoneWithName(Integer code) {  // 根据code获取不同状态的住户列表
         return super.getBaseMapper().getUserPhoneWithName(code);
     }
     @Override
-    public void export(HttpServletResponse response) throws Exception {
-        LocalDate date = LocalDate.now();
-        // 获取上个月最后一天
-        LocalDate lastDayOfLastMonth = date.with(TemporalAdjusters.firstDayOfMonth()).minusDays(1);
-        List<BillExcel> list = super.getBaseMapper().selectExcel(lastDayOfLastMonth,date);
+    public void export(HttpServletResponse response, LocalDate startTime, LocalDate endTime) throws Exception {
+        List<BillExcel> list = super.getBaseMapper().selectExcel(startTime,endTime);
         BigExcelWriter writer = ExcelUtil.getBigWriter();
         // 导出设置了别名的字段
         writer.addHeaderAlias("buildingNum", "楼号");
@@ -197,30 +141,6 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         writer.flush(out, true);
         out.close();
         writer.close();
-    }
-    @Override
-    public Result<String> noticeOfInsufficientBalance() throws Exception {
-        List<User> list = getUserPhoneWithName(StatusEnum.INSUFFICIENT_BALANCE.getCode());
-        if (list.isEmpty()) {   // 余额不足名单为空
-            return Result.success("暂无住户是余额不足状态");
-        } else {
-            for (User user : list) {
-                SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), SMSCodeEnum.INSUFFICIENT_BALANCE.getCode());
-            }
-            return Result.success("短信发送成功");
-        }
-    }
-    @Override
-    public Result<String> notifyPayment() throws Exception {
-        List<User> list = getUserPhoneWithName(StatusEnum.PAYMENT_IN_PROGRESS.getCode());
-        if (list.isEmpty()) {   // 待支付名单为空
-            return Result.success("暂无住户是待支付状态");
-        } else {
-            for (User user : list) {
-                SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), SMSCodeEnum.PAYMENT_NOTICE.getCode());
-            }
-            return Result.success("短信发送成功");
-        }
     }
     @Override
     public Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end) {
@@ -263,6 +183,19 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         }
         return new BigDecimal("0");
     }
+
+    @Override
+    public Result<String> notifyRecharge() throws Exception {
+        List<User> list = getUserPhoneWithName(StatusEnum.REFUND.getCode());
+        if (list.isEmpty()) {   // 余额不足名单为空
+            return Result.success("暂无住户有未缴账单");
+        }
+        for (User user : list) {
+            SendSMSUtil.sendPaymentNotice(user.getPhone(),user.getName(), "SMS_480570194");
+        }
+        return Result.success("短信提醒成功");
+    }
+
     @Transactional
     public BillVo getBillVo(WaterBill w) {
         BillVo billVo = BeanUtil.copyProperties(w, BillVo.class);

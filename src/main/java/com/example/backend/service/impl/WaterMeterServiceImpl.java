@@ -133,12 +133,12 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
         // 小额自动充值，先获取可用余额不足的订单
         List<WaterBill> waterBills = waterBillMapper.selectList(
                 new LambdaQueryWrapper<WaterBill>()
-                        .eq(WaterBill::getStatus, 2));
+                        .eq(WaterBill::getStatus, 2)
+                        .eq(WaterBill::getTime, LocalDate.now().minusDays(1)));
         if (waterBills == null || waterBills.isEmpty()) {
             return null;
         }
         Map<Long, Map<String, Object>> userMap = userMapper.getUserMap(true);
-
         List<WaterMeter> waterMeters = super.lambdaQuery()
                 .in(WaterMeter::getId, waterBills.stream().map(WaterBill::getWaterMeterId).toList()).list();
         Map<Long, WaterMeter> meterMap = waterMeters.stream().collect(Collectors.toMap(WaterMeter::getId, Function.identity()));
@@ -229,8 +229,8 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
                         throw new RuntimeException(e);
                     }
                 }
-                waterMeter.setAvailableLimit(waterMeter.getAvailableLimit().add(consumptionChange));
             }
+            waterMeter.setAvailableLimit(waterMeter.getAvailableLimit().add(consumptionChange));
         }
         // 修改账单
         waterBill.setSummation(newSummation)

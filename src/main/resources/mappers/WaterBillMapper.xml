@@ -18,7 +18,7 @@
                  join building b on b.id = wb.building_id
                  join water_meter wm on wb.water_meter_id = wm.id
         where wb.time BETWEEN #{startOfMonth} AND #{endOfMonth}
-        order by b.id
+        order by wb.time desc,b.id
     </select>
     <select id="getMonthlySummation" resultType="com.example.backend.pojo.vo.DataItem">
         SELECT DATE_FORMAT(time, '%Y-%m') AS time, SUM(summation) AS num, ROUND(AVG(summation)) AS avg_num

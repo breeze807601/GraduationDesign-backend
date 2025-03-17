@@ -133,12 +133,12 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
         // 小额自动充值，先获取可用余额不足的订单
         List<ElectricityBill> electricityBills = electricityBillMapper.selectList(
                 new LambdaQueryWrapper<ElectricityBill>()
-                .eq(ElectricityBill::getStatus, 2));
+                        .eq(ElectricityBill::getStatus, 2)
+                        .eq(ElectricityBill::getTime,LocalDate.now().minusDays(1)));
         if (electricityBills == null || electricityBills.isEmpty()) {
             return null;
         }
         Map<Long, Map<String, Object>> userMap = userMapper.getUserMap(true);
-
         List<ElectricityMeter> electricityMeters = super.lambdaQuery()
                 .in(ElectricityMeter::getId, electricityBills.stream().map(ElectricityBill::getElectricityMeterId).toList()).list();
         Map<Long, ElectricityMeter> meterMap = electricityMeters.stream().collect(Collectors.toMap(ElectricityMeter::getId, Function.identity()));
@@ -229,8 +229,8 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
                         throw new RuntimeException(e);
                     }
                 }
-                electricityMeter.setAvailableLimit(electricityMeter.getAvailableLimit().add(consumptionChange));
             }
+            electricityMeter.setAvailableLimit(electricityMeter.getAvailableLimit().add(consumptionChange));
         }
         // 修改账单
         electricityBill.setSummation(newSummation)
