@@ -66,9 +66,9 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
     }
 
     @Override
-    public void export(HttpServletResponse response) throws Exception {
-        // 获取昨天记录，一天更新一次
-        LocalDate now = LocalDate.now().minusDays(1);
+    public void export(HttpServletResponse response) throws Exception {   // 每天凌晨模拟记录表更新昨天记录，所以需要获取前天记录，将昨天记录更新进去
+        // 获取前天记录
+        LocalDate now = LocalDate.now().minusDays(2);
         List<MeterExcel> list = super.getBaseMapper().selectExcel(now, now);
         BigExcelWriter writer = ExcelUtil.getBigWriter();
         // 导出设置了别名的字段
@@ -103,7 +103,7 @@ public class WaterMeterServiceImpl extends ServiceImpl<WaterMeterMapper, WaterMe
     @Override
     public Result<LocalDate> upload(MultipartFile multipartFile) {
         InputStream inputStream;
-        LocalDate time = LocalDate.now();      // 录入时间
+        LocalDate time = LocalDate.now().minusDays(1);      // 录入时间,即昨天
         try {
             inputStream = multipartFile.getInputStream();
             ExcelReader reader = ExcelUtil.getReader(inputStream);

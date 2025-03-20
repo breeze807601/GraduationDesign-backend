@@ -87,7 +87,6 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         waterMeterMapper.updateById(waterMeters);
         super.saveBatch(list);
     }
-
     @Transactional
     @Override
     public PageDTO<BillVo> getPage(BillQuery q) {
@@ -127,13 +126,11 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         writer.addHeaderAlias("cost", "总费用(元)");
         writer.addHeaderAlias("statusExcel", "状态");
         writer.setOnlyAlias(true);
-
         Sheet sheet = writer.getSheet();
         for (int i = 3; i < 11; i++) {
             sheet.setColumnWidth(i, 15 * 256);
         }
         writer.write(list, true);  // 写入数据
-        // 设置响应头并写出到浏览器
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");
         String fileName = URLEncoder.encode("上月用电账单", "UTF-8");
         response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
@@ -143,14 +140,14 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         writer.close();
     }
     @Override
-    public Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end) {
+    public Map<String, Object> waterStatistics(LocalDate start, LocalDate end) {
         if (start == null && end == null) {  // 默认为半年内
             start = LocalDate.now().minusMonths(6).with(TemporalAdjusters.firstDayOfMonth());
             end = LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());
         } else {  // 设置为当月最后一天
             end = end.with(TemporalAdjusters.lastDayOfMonth());
         }
-        return StatisticsUtil.getMap(super.getBaseMapper().getMonthlySummation(start,end));
+        return StatisticsUtil.getMap(super.getBaseMapper().getSummation(start,end));
     }
     @Override
     public Map<String, Object> getCostStatistics(LocalDate start, LocalDate end) {
@@ -163,27 +160,17 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         return StatisticsUtil.getMap(super.getBaseMapper().getCostStatistics(start,end));
     }
     @Override
-    public List<PieChartVo> getBillStatusPieChart() {
-        LocalDate now = LocalDate.now();
-        // 获取上个月第一天
-        LocalDate firstDayOfLastMonth = now.minusMonths(1).with(TemporalAdjusters.firstDayOfMonth());
-        // 获取上个月最后一天
-        LocalDate lastDayOfLastMonth = now.minusMonths(1).with(TemporalAdjusters.lastDayOfMonth());
-        return super.getBaseMapper().getBillStatusPieChart(firstDayOfLastMonth,lastDayOfLastMonth);
-    }
-    @Override
     public BigDecimal myCount() {
-        // 获取上个月的第一天和最后一天
+        // 获取本月的第一天和最后一天
         LocalDate today = LocalDate.now();
-        LocalDate firstDayOfLastMonth = today.minusMonths(1).with(TemporalAdjusters.firstDayOfMonth());
-        LocalDate lastDayOfLastMonth = today.minusMonths(1).with(TemporalAdjusters.lastDayOfMonth());
-        List<DataItem> monthlySummation = super.getBaseMapper().getMonthlySummation(firstDayOfLastMonth, lastDayOfLastMonth);
+        LocalDate firstDayOfLastMonth = today.with(TemporalAdjusters.firstDayOfMonth());
+        LocalDate lastDayOfLastMonth = today.with(TemporalAdjusters.lastDayOfMonth());
+        List<DataItem> monthlySummation = super.getBaseMapper().getSummation(firstDayOfLastMonth, lastDayOfLastMonth);
         if (!monthlySummation.isEmpty()) {
             return monthlySummation.get(0).getNum();
         }
         return new BigDecimal("0");
     }
-
     @Override
     public Result<String> notifyRecharge() throws Exception {
         List<User> list = getUserPhoneWithName(StatusEnum.REFUND.getCode());
@@ -195,7 +182,6 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
         }
         return Result.success("短信提醒成功");
     }
-
     @Transactional
     public BillVo getBillVo(WaterBill w) {
         BillVo billVo = BeanUtil.copyProperties(w, BillVo.class);
@@ -208,7 +194,8 @@ public class WaterBillServiceImpl extends ServiceImpl<WaterBillMapper, WaterBill
                 .setName(user.getName())
                 .setMeterId(waterMeter.getId())
                 .setPreviousReading(waterMeter.getPreviousReading())
-                .setReading(waterMeter.getReading());
+                .setReading(waterMeter.getReading())
+                .setAvailableLimit(waterMeter.getAvailableLimit());
         return billVo;
     }
 }

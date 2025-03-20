@@ -101,10 +101,7 @@ class BackendApplicationTests {
 
     @Test
     void mapper() {
-        List<PieChartVo> billStatusPieChart = electricityBillService.getBillStatusPieChart();
-        for (PieChartVo pieChartVo : billStatusPieChart) {
-            System.out.println(pieChartVo.getName());
-        }
+
     }
     @Test
     void smsT() {

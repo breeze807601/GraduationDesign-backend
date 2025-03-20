@@ -68,7 +68,7 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
     @Override
     public void export(HttpServletResponse response) throws Exception {
         // 获取昨天记录，一天更新一次
-        LocalDate now = LocalDate.now().minusDays(1);
+        LocalDate now = LocalDate.now().minusDays(2);
         List<MeterExcel> list = super.getBaseMapper().selectExcel(now, now);
         BigExcelWriter writer = ExcelUtil.getBigWriter();
         // 导出设置了别名的字段
@@ -102,7 +102,7 @@ public class ElectricityMeterServiceImpl extends ServiceImpl<ElectricityMeterMap
     @Override
     public Result<LocalDate> upload(MultipartFile multipartFile) {
         InputStream inputStream;
-        LocalDate time = LocalDate.now();      // 录入时间
+        LocalDate time = LocalDate.now().minusDays(1);      // 录入时间
         try {
             inputStream = multipartFile.getInputStream();
             ExcelReader reader = ExcelUtil.getReader(inputStream);

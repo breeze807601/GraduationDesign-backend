@@ -3,11 +3,8 @@ package com.example.backend.controller;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.example.backend.common.Result;
 import com.example.backend.pojo.dto.PageDTO;
-import com.example.backend.pojo.entity.ElectricityBill;
-import com.example.backend.pojo.entity.WaterBill;
 import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillVo;
-import com.example.backend.pojo.vo.PieChartVo;
 import com.example.backend.service.IWaterBillService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -61,9 +57,9 @@ public class WaterBillController {
     }
     @Operation(summary = "统计时间段内每月用电量")
     @SaCheckRole("admin")
-    @GetMapping("getMonthlyUsage")
+    @GetMapping("waterStatistics")
     public Result<Map<String, Object>> getMonthlyUsage(LocalDate start, LocalDate end) {
-        return Result.success(waterBillService.getMonthlyUsage(start, end));
+        return Result.success(waterBillService.waterStatistics(start, end));
     }
     @Operation(summary = "每月用水费用统计和平均值")
     @SaCheckRole("admin")
@@ -71,13 +67,7 @@ public class WaterBillController {
     public Result<Map<String, Object>> getCostStatistics(LocalDate start, LocalDate end) {
         return Result.success(waterBillService.getCostStatistics(start,end));
     }
-    @Operation(summary = "统计上月账单状态饼图")
-    @SaCheckRole("admin")
-    @GetMapping("getBillStatusPieChart")
-    public Result<List<PieChartVo>> getBillStatusPieChart() {
-        return Result.success(waterBillService.getBillStatusPieChart());
-    }
-    @Operation(summary = "上月用电量统计")
+    @Operation(summary = "本月用水量统计")
     @SaCheckRole("admin")
     @GetMapping("count")
     public Result<BigDecimal> count() {

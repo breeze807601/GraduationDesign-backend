@@ -20,26 +20,18 @@
         where eb.time BETWEEN #{startOfMonth} AND #{endOfMonth}
         order by eb.time desc,b.id
     </select>
-    <select id="getMonthlySummation" resultType="com.example.backend.pojo.vo.DataItem">
-        SELECT DATE_FORMAT(time, '%Y-%m') AS time, SUM(summation) AS num, ROUND(AVG(summation)) AS avg_num         # avg_num平均数，取整
+    <select id="getSummation" resultType="com.example.backend.pojo.vo.DataItem">
+        SELECT DATE_FORMAT(time, '%Y-%m') AS time, SUM(summation) AS num, ROUND(SUM(summation) / COUNT(DISTINCT user_id)) AS avg_num         # avg_num平均数，取整
         FROM electricity_bill
         WHERE time BETWEEN #{start} AND #{end}
         GROUP BY DATE_FORMAT(time, '%Y-%m')
         ORDER BY time
     </select>
     <select id="getCostStatistics" resultType="com.example.backend.pojo.vo.DataItem">
-        SELECT DATE_FORMAT(time, '%Y-%m') AS time, SUM(cost) AS num, ROUND(AVG(cost)) AS avg_num
+        SELECT DATE_FORMAT(time, '%Y-%m') AS time, SUM(cost) AS num, ROUND(SUM(cost) / COUNT(DISTINCT user_id)) AS avg_num
         FROM electricity_bill
         WHERE time BETWEEN #{start} AND #{end}
         GROUP BY DATE_FORMAT(time, '%Y-%m')
         ORDER BY time
-    </select>
-    <select id="getBillStatusPieChart" resultType="com.example.backend.pojo.vo.PieChartVo">
-        SELECT status as name, COUNT(*) AS value
-        FROM electricity_bill
-        WHERE time BETWEEN #{firstDayOfLastMonth} AND #{lastDayOfLastMonth}
-          AND status != 2  -- 排除status为1的记录,即退款的
-        GROUP BY name
-        ORDER BY name
     </select>
 </mapper>

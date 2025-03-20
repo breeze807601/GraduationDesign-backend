@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillVo;
-import com.example.backend.pojo.vo.PieChartVo;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.math.BigDecimal;
@@ -28,9 +27,8 @@ public interface IWaterBillService extends IService<WaterBill> {
     PageDTO<BillVo> getPage(BillQuery billQuery);
     List<User> getUserPhoneWithName(Integer status);
     void export(HttpServletResponse response,LocalDate startTime, LocalDate endTime) throws Exception;
-    Map<String, Object> getMonthlyUsage(LocalDate start, LocalDate end);
+    Map<String, Object> waterStatistics(LocalDate start, LocalDate end);
     Map<String, Object> getCostStatistics(LocalDate start, LocalDate end);
-    List<PieChartVo> getBillStatusPieChart();
     BigDecimal myCount();
     Result<String> notifyRecharge() throws Exception;
 }

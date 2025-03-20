@@ -3,10 +3,8 @@ package com.example.backend.controller;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.example.backend.common.Result;
 import com.example.backend.pojo.dto.PageDTO;
-import com.example.backend.pojo.entity.ElectricityBill;
 import com.example.backend.pojo.query.BillQuery;
 import com.example.backend.pojo.vo.BillVo;
-import com.example.backend.pojo.vo.PieChartVo;
 import com.example.backend.service.IElectricityBillService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -58,11 +55,11 @@ public class ElectricityBillController {
     public Result<String> notifyRecharge() throws Exception {
         return electricityBillService.notifyRecharge();
     }
-    @Operation(summary = "统计时间段内每月用电量")
+    @Operation(summary = "统计时间段内用电量")
     @SaCheckRole("admin")
-    @GetMapping("getMonthlyUsage")
-    public Result<Map<String, Object>> getMonthlyUsage(LocalDate start, LocalDate end) {
-        return Result.success(electricityBillService.getMonthlyUsage(start, end));
+    @GetMapping("electricityStatistics")
+    public Result<Map<String, Object>> electricityStatistics(LocalDate start, LocalDate end) {
+        return Result.success(electricityBillService.electricityStatistics(start, end));
     }
     @Operation(summary = "每月用电费用统计和平均值")
     @SaCheckRole("admin")
@@ -70,17 +67,10 @@ public class ElectricityBillController {
     public Result<Map<String, Object>> getCostStatistics(LocalDate start, LocalDate end) {
         return Result.success(electricityBillService.getCostStatistics(start,end));
     }
-    @Operation(summary = "统计上月账单状态饼图")
-    @SaCheckRole("admin")
-    @GetMapping("getBillStatusPieChart")
-    public Result<List<PieChartVo>> getBillStatusPieChart() {
-        return Result.success(electricityBillService.getBillStatusPieChart());
-    }
-    @Operation(summary = "上月用电量统计")
+    @Operation(summary = "本月用电量统计")
     @SaCheckRole("admin")
     @GetMapping("count")
     public Result<BigDecimal> count() {
         return Result.success(electricityBillService.myCount());
     }
-
 }

@@ -152,6 +152,6 @@ public class UserController {
     @SaCheckRole("admin")
     @GetMapping("count")
     public Result<Long> count() {
-        return Result.success(userService.count());
+        return Result.success(userService.lambdaQuery().eq(User::getDeleted, 0).count());
     }
 }
