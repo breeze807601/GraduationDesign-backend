@@ -9,6 +9,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.backend.common.Result;
 import com.example.backend.common.enums.SMSCodeEnum;
 import com.example.backend.pojo.dto.ForgotPwDTO;
+import com.example.backend.pojo.dto.UpdatePhoneDTO;
+import com.example.backend.pojo.entity.Admin;
 import com.example.backend.pojo.entity.User;
 import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.query.UserQuery;
@@ -63,7 +65,7 @@ public class UserController {
         }
         // 发送短信验证码
         SendSMSUtil.sendPaymentNotice(phone,code, SMSCodeEnum.VERIFICATION_CODE.getCode());
-        // 将验证码存储到Redis中，设置过期时间为5分钟（300秒）
+        // 将验证码存储到Redis中，设置过期时间为10分钟
         redisTemplate.opsForValue().set(user.getId() + "_code", code, 600, TimeUnit.SECONDS);
         return Result.success("验证码已发送");
     }
@@ -87,6 +89,25 @@ public class UserController {
         }
         // 加密
         user.setPassword(EncryptionUtil.encrypt(forgotPwDTO.getNewPw()));
+        userService.updateById(user);
+        return Result.success("修改成功！");
+    }
+    @Operation(summary = "修改电话")
+    @SaCheckRole("user")
+    @PutMapping("updatePhone")
+    public Result<String> updatePhone(@RequestBody UpdatePhoneDTO dto) {
+        String code = redisTemplate.opsForValue().get(dto.getId() + "_code");
+        if (code == null) {
+            return Result.error("验证码已过期！");
+        }
+        if (!code.equals(dto.getCode())) {
+            return Result.error("验证码错误！");
+        }
+        if (userService.lambdaQuery().eq(User::getPhone, dto.getNewPhone()).exists()) {
+            return Result.error("该手机号已存在，不可重复！");
+        }
+        User user = userService.getById(dto.getId())
+                .setPhone(dto.getNewPhone());
         userService.updateById(user);
         return Result.success("修改成功！");
     }

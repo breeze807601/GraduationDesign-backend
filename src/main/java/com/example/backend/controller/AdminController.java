@@ -84,7 +84,7 @@ public class AdminController {
         }
         // 发送短信验证码
         SendSMSUtil.sendPaymentNotice(phone,code, SMSCodeEnum.VERIFICATION_CODE.getCode());
-        // 将验证码存储到Redis中，设置过期时间为5分钟（300秒）
+        // 将验证码存储到Redis中，设置过期时间为10分钟
         redisTemplate.opsForValue().set(admin.getId() + "_code", code, 600, TimeUnit.SECONDS);
         return Result.success("验证码已发送");
     }
@@ -122,11 +122,11 @@ public class AdminController {
         if (!code.equals(dto.getCode())) {
             return Result.error("验证码错误！");
         }
-        if (adminService.lambdaQuery().eq(Admin::getPhone, dto.getPhone()).exists()) {
+        if (adminService.lambdaQuery().eq(Admin::getPhone, dto.getNewPhone()).exists()) {
             return Result.error("该手机号已存在，不可重复！");
         }
         Admin admin = adminService.getById(dto.getId())
-                .setPhone(dto.getPhone());
+                .setPhone(dto.getNewPhone());
         adminService.updateById(admin);
         return Result.success("修改成功！");
     }
