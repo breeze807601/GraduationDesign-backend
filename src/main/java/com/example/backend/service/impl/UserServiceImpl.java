@@ -57,6 +57,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         if(user == null) {
             return Result.error("用户不存在！");
         }
+        if (user.getDeleted() == 1) {
+            return Result.error("用户已被删除！");
+        }
         if (EncryptionUtil.checkPassword(u.getPassword(),user.getPassword())) {
             StpUtil.login(user.getId());
             return Result.success("登录成功！");

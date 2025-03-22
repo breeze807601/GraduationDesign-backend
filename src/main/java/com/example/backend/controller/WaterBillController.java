@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaMode;
 import com.example.backend.common.Result;
 import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.query.BillQuery;
@@ -56,16 +57,16 @@ public class WaterBillController {
         return waterBillService.notifyRecharge();
     }
     @Operation(summary = "统计时间段内每月用电量")
-    @SaCheckRole("admin")
+    @SaCheckRole(value = {"admin", "user"}, mode = SaMode.OR)
     @GetMapping("waterStatistics")
-    public Result<Map<String, Object>> getMonthlyUsage(LocalDate start, LocalDate end) {
-        return Result.success(waterBillService.waterStatistics(start, end));
+    public Result<Map<String, Object>> getMonthlyUsage(LocalDate start, LocalDate end, Boolean isUser) {
+        return Result.success(waterBillService.waterStatistics(start, end, isUser));
     }
     @Operation(summary = "每月用水费用统计和平均值")
-    @SaCheckRole("admin")
+    @SaCheckRole(value = {"admin", "user"}, mode = SaMode.OR)
     @GetMapping("getCostStatistics")
-    public Result<Map<String, Object>> getCostStatistics(LocalDate start, LocalDate end) {
-        return Result.success(waterBillService.getCostStatistics(start,end));
+    public Result<Map<String, Object>> getCostStatistics(LocalDate start, LocalDate end, Boolean isUser) {
+        return Result.success(waterBillService.getCostStatistics(start,end,isUser));
     }
     @Operation(summary = "本月用水量统计")
     @SaCheckRole("admin")

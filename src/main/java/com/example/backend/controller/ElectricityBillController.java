@@ -1,6 +1,7 @@
 package com.example.backend.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaMode;
 import com.example.backend.common.Result;
 import com.example.backend.pojo.dto.PageDTO;
 import com.example.backend.pojo.query.BillQuery;
@@ -56,16 +57,16 @@ public class ElectricityBillController {
         return electricityBillService.notifyRecharge();
     }
     @Operation(summary = "统计时间段内用电量")
-    @SaCheckRole("admin")
+    @SaCheckRole(value = {"admin", "user"}, mode = SaMode.OR)
     @GetMapping("electricityStatistics")
-    public Result<Map<String, Object>> electricityStatistics(LocalDate start, LocalDate end) {
-        return Result.success(electricityBillService.electricityStatistics(start, end));
+    public Result<Map<String, Object>> electricityStatistics(LocalDate start, LocalDate end, Boolean isUser) {
+        return Result.success(electricityBillService.electricityStatistics(start, end, isUser));
     }
     @Operation(summary = "每月用电费用统计和平均值")
-    @SaCheckRole("admin")
+    @SaCheckRole(value = {"admin", "user"}, mode = SaMode.OR)
     @GetMapping("getCostStatistics")
-    public Result<Map<String, Object>> getCostStatistics(LocalDate start, LocalDate end) {
-        return Result.success(electricityBillService.getCostStatistics(start,end));
+    public Result<Map<String, Object>> getCostStatistics(LocalDate start, LocalDate end, Boolean isUser) {
+        return Result.success(electricityBillService.getCostStatistics(start,end,isUser));
     }
     @Operation(summary = "本月用电量统计")
     @SaCheckRole("admin")

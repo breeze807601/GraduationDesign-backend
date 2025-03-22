@@ -1,5 +1,6 @@
 package com.example.backend.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.poi.excel.BigExcelWriter;
 import cn.hutool.poi.excel.ExcelUtil;
@@ -140,24 +141,32 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
         writer.close();
     }
     @Override
-    public Map<String, Object> electricityStatistics(LocalDate start, LocalDate end) {
+    public Map<String, Object> electricityStatistics(LocalDate start, LocalDate end, Boolean isUser) {
         if (start == null && end == null) {  // 默认为半年内
             start = LocalDate.now().minusMonths(6).with(TemporalAdjusters.firstDayOfMonth());
             end = LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());
         } else {  // 设置为当月最后一天
             end = end.with(TemporalAdjusters.lastDayOfMonth());
         }
-        return StatisticsUtil.getMap(super.getBaseMapper().getSummation(start,end));
+        Long id = null;
+        if (isUser) {
+            id = Long.parseLong(StpUtil.getLoginId().toString());
+        }
+        return StatisticsUtil.getMap(super.getBaseMapper().getSummation(start,end,id));
     }
     @Override
-    public Map<String, Object> getCostStatistics(LocalDate start, LocalDate end) {
+    public Map<String, Object> getCostStatistics(LocalDate start, LocalDate end, Boolean isUser) {
         if (start == null && end == null) {  // 默认为半年内
             start = LocalDate.now().minusMonths(6).with(TemporalAdjusters.firstDayOfMonth());
             end = LocalDate.now().with(TemporalAdjusters.lastDayOfMonth());
         } else {  // 设置为当月最后一天
             end = end.with(TemporalAdjusters.lastDayOfMonth());
         }
-        return StatisticsUtil.getMap(super.getBaseMapper().getCostStatistics(start,end));
+        Long id = null;
+        if (isUser) {
+            id = Long.parseLong(StpUtil.getLoginId().toString());
+        }
+        return StatisticsUtil.getMap(super.getBaseMapper().getCostStatistics(start,end,id));
     }
     @Override
     public BigDecimal myCount() {
@@ -165,7 +174,7 @@ public class ElectricityBillServiceImpl extends ServiceImpl<ElectricityBillMappe
         LocalDate today = LocalDate.now();
         LocalDate firstDayOfLastMonth = today.with(TemporalAdjusters.firstDayOfMonth());
         LocalDate lastDayOfLastMonth = today.with(TemporalAdjusters.lastDayOfMonth());
-        List<DataItem> monthlySummation = super.getBaseMapper().getSummation(firstDayOfLastMonth, lastDayOfLastMonth);
+        List<DataItem> monthlySummation = super.getBaseMapper().getSummation(firstDayOfLastMonth, lastDayOfLastMonth,null);
         if (!monthlySummation.isEmpty()) {
             return monthlySummation.get(0).getNum();
         }

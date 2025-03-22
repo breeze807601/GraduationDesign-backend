@@ -24,6 +24,9 @@
         SELECT DATE_FORMAT(time, '%Y-%m') AS time, SUM(summation) AS num, ROUND(SUM(summation) / COUNT(DISTINCT user_id)) AS avg_num
         FROM water_bill
         WHERE time BETWEEN #{start} AND #{end}
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
         GROUP BY DATE_FORMAT(time, '%Y-%m')
         ORDER BY time
     </select>
@@ -31,6 +34,9 @@
         SELECT DATE_FORMAT(time, '%Y-%m') AS time, SUM(cost) AS num, ROUND(SUM(cost) / COUNT(DISTINCT user_id)) AS avg_num
         FROM water_bill
         WHERE time BETWEEN #{start} AND #{end}
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
         GROUP BY DATE_FORMAT(time, '%Y-%m')
         ORDER BY time
     </select>

@@ -27,8 +27,8 @@ public interface IElectricityBillService extends IService<ElectricityBill> {
     PageDTO<BillVo> getPage(BillQuery billQuery);
     List<User> getUserPhoneWithName(Integer status);
     void export(HttpServletResponse response,LocalDate startTime, LocalDate endTime) throws Exception;
-    Map<String, Object> electricityStatistics(LocalDate start, LocalDate end);
-    Map<String, Object> getCostStatistics(LocalDate start, LocalDate end);
+    Map<String, Object> electricityStatistics(LocalDate start, LocalDate end, Boolean isUser);
+    Map<String, Object> getCostStatistics(LocalDate start, LocalDate end, Boolean isUser);
     BigDecimal myCount();
     Result<String> notifyRecharge() throws Exception;
 }
